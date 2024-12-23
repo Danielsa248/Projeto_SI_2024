@@ -5,6 +5,7 @@ from datetime import time
 from spade.message import Message
 import random
 import jsonpickle
+from DadosMedicos import DadosMedicos
 
 
 xmp_server = "desktop-j59unhi"
@@ -32,11 +33,16 @@ class Medico(Agent):
             turno = random.choice(self.agent.turno)
 
             #Manda msg ao Gestor de Médicos
-            mo = DadosMedicos(self.agent.jid, pos_x, pos_y, disp)
-            msg = Message(to="gestor_medico@" + xmp_server)
+            mo = DadosMedicos(self.agent.jid, esp, turno)
+            msg = Message(to="gestor_medicos@" + xmp_server)
             msg.body = jsonpickle.encode(mo)
             msg.set_metadata("performative", "inform")
 
             await self.send(msg)
             print(f"{self.agent.jid}: Registo enviado ao Gestor")
             print(f"{self.agent.jid}: Especialidade = {esp} Turno = {turno}")
+
+
+    class MedicoTrata(CyclicBehaviour):
+        async def run(self):
+            
