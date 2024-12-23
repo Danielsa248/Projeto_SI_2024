@@ -1,7 +1,7 @@
 #Classe para a mensagem que informa o Medico qual o Paciente e sintomas a tratar
 
 class TratamentoPacientes:
-    def __init__(self, jid: str, sintomas: list):
+    def __init__(self, jid: str, sintomas: dict):
         self.jid = jid
         self.sintomas = sintomas
 

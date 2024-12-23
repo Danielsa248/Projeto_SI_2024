@@ -9,7 +9,7 @@ class DadosMedicos:
         self.especialidade = especialidade
         self.turno = turno
 
-    def getJid(self):
+    def getMedico(self):
         return self.jid
 
     def getEspecialidade(self):
