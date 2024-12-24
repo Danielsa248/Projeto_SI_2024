@@ -69,10 +69,10 @@ class GestorMedicos(Agent):
                     ordem = TratamentoPacientes(paciente, sintomas)
 
                     meds_disp = False
-                    for medico in self.agent.medicos[especialidade].values():
-                        if medico[1] == True:
-                            medico = self.agent.medicos[especialidade][0]
-                            medico[1] = False
+                    for med in self.agent.medicos[especialidade]:
+                        if med[1] == True:
+                            medico = med[0]
+                            med[1] = False
                             meds_disp = True
                             break
 
