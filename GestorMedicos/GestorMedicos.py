@@ -76,20 +76,24 @@ class GestorMedicos(Agent):
                             meds_disp = True
                             break
 
-                    if not meds_disp:
-                        for medico in self.agent.medicos["Clínica"].values():
-                            if medico[1] == True:
-                                medico = self.agent.medicos[especialidade][0]
-                                medico[1] = False
-                                meds_disp = True
-                                break
+                    #Envia mensagem ao alerta para lhe informar sobre o pedido
+                    msg_alerta = Message(to="alerta@" + xmp_server)
 
-                    msg = Message(to= medico + "@" + xmp_server)
-                    msg.body = jsonpickle.encode(ordem)
-                    msg.set_metadata("performative", "request")
+                    if meds_disp:
+                        msg_alerta.set_metadata("performative", "confirm")
+                        await self.send(msg_alerta)
 
-                    await self.send(msg)
-                    print(f"{self.agent.jid}: Médico {medico} requisitado para o Paciente {paciente}")
+                        # Envia mensagem ao Médico com a informação do paciente a ser tratado
+                        msg = Message(to=medico + "@" + xmp_server)
+                        msg.body = jsonpickle.encode(ordem)
+                        msg.set_metadata("performative", "request")
+                        await self.send(msg)
+                        print(f"{self.agent.jid}: Médico {medico} requisitado para o Paciente {paciente}")
+
+                    else:
+                        msg_alerta.set_metadata("performative", "refuse")
+                        await self.send(msg_alerta)
+                        print(f"{self.agent.jid}: Nenhum Médico está disponível para o Paciente {paciente}")
 
 
     '''Comportamento que espera que um Médico termine um tratamento'''
