@@ -11,6 +11,7 @@ AGENTE_UNIDADE = f"AgenteUnidade@{XMPP_SERVER}" # Substituir pelo JID do Agente 
 AGENTE_MONITOR = f"AgenteMonitor@{XMPP_SERVER}" # Substituir pelo JID do Agente Monitor
 AGENTE_ALERTA = f"AgenteAlerta@{XMPP_SERVER}" # Substituir pelo JID do Agente Alerta
 AGENTE_GESTOR_MEDICOS = f"GestorMedicos@{XMPP_SERVER}" # Substituir pelo JID do Gestor de Médicos
+AGENTE_PACIENTE = f"AgentePaciente@{XMPP_SERVER}" # Substituir pelo JID do Agente Paciente
 
 # Constantes Globais
 GRAU_MIN = 0
@@ -20,7 +21,23 @@ ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
     "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
 ]
+
+
 TURNOS = ["turno1", "turno2", "turno3"]
+
+# Valores referência
+bpmbaixo_ideal = 60
+bpmcima_ideal = 100
+temperatura_ideal = 37
+bf_ideal = 20
+#Valores iniciais
+bpmbaixoinicial = 40
+bpmcimainicial = 220
+bfbaixoinicial = 6
+bfcimainicial = 34
+tempbaixoinicial = 30
+tempcimainicial = 44
+
 
 # Funções
 def determinar_grau(self, dados_paciente):
