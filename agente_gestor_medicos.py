@@ -1,27 +1,29 @@
+import random
 from spade.agent import Agent
-from spade.behaviour import CyclicBehaviour
+from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
-from datetime import datetime
 import jsonpickle
-from TratamentoPacientes import *
+from info_comum import *
 
 
 xmp_server = "desktop-j59unhi"
 
 
 class GestorMedicos(Agent):
-    async def run(self):
-        print("----------------------")
-        print("| Gestor de Médicos |")
-        print("----------------------")
-        behave1 = self.RegistaMedico(CyclicBehaviour())
-        behave2 = self.OrdemMedico(CyclicBehaviour())
-        behave3 = self.FimTratamento(CyclicBehaviour())
+    medicos = {especialidade: [] for especialidade in ESPECIALIDADES}
+    turnos = ["turno1", "turno2", "turno3"]
+
+    turno_atual = random.choice(turnos)
+
+    async def setup(self):
+        behave1 = self.RegistaMedico()
+        behave2 = self.OrdemMedico()
+        behave3 = self.FimTratamento()
+        behave4 = self.TrocaTurnos(period=30)
         self.add_behaviour(behave1)
         self.add_behaviour(behave2)
         self.add_behaviour(behave3)
-        self.medicos = {"Cardiologia":[], "Pediatria": [], "Ortopedia": [],
-                        "Clínica": [], "Oftalmologia": [], "Dermatologia": []}
+        self.add_behaviour(behave4)
 
 
     '''Comportamento que espera Médicos para os registar no sistema'''
@@ -38,17 +40,11 @@ class GestorMedicos(Agent):
                     especialidade = dados.getEspecialidade()
                     turno = dados.getTurno()
 
-                    #Turno normal
-                    if turno[0] < turno[1]:
-                        if turno[0] <= datetime.now().time() < turno[1]:
-                            disp = True
+                    if turno == self.agent.turno_atual:
+                        self.agent.medicos[especialidade].append([jid, turno, True])
 
-                    #Turno durante a meia-noite
                     else:
-                        if turno[0] <= datetime.now().time() or datetime.now().time() < turno[1]:
-                            disp = True
-
-                    self.agent.medicos[especialidade].append([jid, disp])
+                        self.agent.medicos[especialidade].append([jid, turno, False])
 
 
     '''Comportamento que espera requisições do Agente Alerta e 
@@ -62,32 +58,29 @@ class GestorMedicos(Agent):
                 req = requisicao.get_metadata("performative")
                 if req == "request":
                     dados = jsonpickle.decode(requisicao.body)
-                    paciente = dados.getPaciente()
+                    paciente = dados.getjid()
                     especialidade = dados.getEspecialidade()
-                    sintomas = dados.getSintomas()
 
-                    ordem = TratamentoPacientes(paciente, sintomas)
-
-                    meds_disp = False
+                    med_encontrado = False
                     for med in self.agent.medicos[especialidade]:
-                        if med[1] == True:
+                        if med[2]:
                             medico = med[0]
-                            med[1] = False
-                            meds_disp = True
+                            med[2] = False
+                            med_encontrado = True
                             break
 
-                    #Envia mensagem ao alerta para lhe informar sobre o pedido
-                    msg_alerta = Message(to="alerta@" + xmp_server)
+                    #Envia mensagem ao Agente Alerta para lhe informar sobre o pedido
+                    msg_alerta = Message(to="AgenteAlerta@" + xmp_server)
 
-                    if meds_disp:
+                    if med_encontrado:
                         msg_alerta.set_metadata("performative", "confirm")
                         await self.send(msg_alerta)
 
                         # Envia mensagem ao Médico com a informação do paciente a ser tratado
-                        msg = Message(to=medico + "@" + xmp_server)
-                        msg.body = jsonpickle.encode(ordem)
-                        msg.set_metadata("performative", "request")
-                        await self.send(msg)
+                        ordem = Message(to=medico + "@" + xmp_server)
+                        ordem.set_metadata("performative", "inform")
+                        ordem.body = paciente
+                        await self.send(ordem)
                         print(f"{self.agent.jid}: Médico {medico} requisitado para o Paciente {paciente}")
 
                     else:
@@ -111,7 +104,26 @@ class GestorMedicos(Agent):
 
                     for med in self.agent.medicos[especialidade]:
                         if med[0] == medico:
-                            med[1] = True
-                            break
+                            if self.agent.turno_atual == med[1]:
+                                med[2] = True
+                                print(f"{self.agent.jid}: Médico {medico} novamente disponível")
+                                break
 
-                    print(f"{self.agent.jid}: Médico {medico} novamente disponível")
+
+    '''Comportamento relativo à troca de turnos dos Médicos'''
+
+    class TrocaTurnos(PeriodicBehaviour):
+        async def run(self):
+            if self.agent.turno_atual == self.agent.turnos[-1]:
+                self.agent.turno_atual = self.agent.turnos[0]
+
+            else:
+                self.agent.turno_atual = self.agent.turnos[self.agent.turnos.index(self.agent.turno_atual) + 1]
+
+            for esp in self.agent.medicos.keys():
+                for med in self.agent.medicos[esp]:
+                    if med[1] == self.agent.turno_atual:
+                        med[2] = True
+
+                    else:
+                        med[2] = False

@@ -1,10 +1,7 @@
-from datetime import time
-
-
 #Classe para a mensagem que o Medico envia ao Gestor Medico para efetuar o registo com os seus dados
 
 class DadosMedicos:
-    def __init__(self, jid: str, especialidade: str, turno: (time, time)):
+    def __init__(self, jid: str, especialidade: str, turno: str):
         self.jid = jid
         self.especialidade = especialidade
         self.turno = turno
