@@ -16,6 +16,10 @@ AGENTE_GESTOR_MEDICOS = f"GestorMedicos@{XMPP_SERVER}" # Substituir pelo JID do 
 GRAU_MIN = 0
 GRAU_MAX = 9
 LIMITE_ALERTA = 5
+ESPECIALIDADES = [
+    "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
+    "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
+]
 
 # Funções
 def determinar_grau(self, dados_paciente):
