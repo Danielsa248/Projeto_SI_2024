@@ -6,14 +6,9 @@ import jsonpickle
 from info_comum import *
 
 
-xmp_server = "desktop-j59unhi"
-
-
 class GestorMedicos(Agent):
     medicos = {especialidade: [] for especialidade in ESPECIALIDADES}
-    turnos = ["turno1", "turno2", "turno3"]
-
-    turno_atual = random.choice(turnos)
+    turno_atual = TURNOS[0]
 
     async def setup(self):
         behave1 = self.RegistaMedico()
@@ -70,14 +65,14 @@ class GestorMedicos(Agent):
                             break
 
                     #Envia mensagem ao Agente Alerta para lhe informar sobre o pedido
-                    msg_alerta = Message(to="AgenteAlerta@" + xmp_server)
+                    msg_alerta = Message(to="AgenteAlerta@" + XMPP_SERVER)
 
                     if med_encontrado:
                         msg_alerta.set_metadata("performative", "confirm")
                         await self.send(msg_alerta)
 
                         # Envia mensagem ao Médico com a informação do paciente a ser tratado
-                        ordem = Message(to=medico + "@" + xmp_server)
+                        ordem = Message(to=medico + "@" + XMPP_SERVER)
                         ordem.set_metadata("performative", "inform")
                         ordem.body = paciente
                         await self.send(ordem)
@@ -104,7 +99,7 @@ class GestorMedicos(Agent):
 
                     for med in self.agent.medicos[especialidade]:
                         if med[0] == medico:
-                            if self.agent.turno_atual == med[1]:
+                            if med[1] == self.agent.turno_atual :
                                 med[2] = True
                                 print(f"{self.agent.jid}: Médico {medico} novamente disponível")
                                 break
@@ -114,14 +109,14 @@ class GestorMedicos(Agent):
 
     class TrocaTurnos(PeriodicBehaviour):
         async def run(self):
-            if self.agent.turno_atual == self.agent.turnos[-1]:
-                self.agent.turno_atual = self.agent.turnos[0]
+            if self.agent.turno_atual == TURNOS[-1]:
+                self.agent.turno_atual = TURNOS[0]
 
             else:
-                self.agent.turno_atual = self.agent.turnos[self.agent.turnos.index(self.agent.turno_atual) + 1]
+                self.agent.turno_atual = TURNOS[TURNOS.index(self.agent.turno_atual) + 1]
 
-            for esp in self.agent.medicos.keys():
-                for med in self.agent.medicos[esp]:
+            for especialidade in self.agent.medicos.keys():
+                for med in self.agent.medicos[especialidade]:
                     if med[1] == self.agent.turno_atual:
                         med[2] = True
 

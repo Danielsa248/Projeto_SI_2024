@@ -20,6 +20,7 @@ ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
     "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
 ]
+TURNOS = ["turno1", "turno2", "turno3"]
 
 # Funções
 def determinar_grau(self, dados_paciente):

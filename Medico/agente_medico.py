@@ -1,7 +1,6 @@
 import time
 from spade.agent import Agent
-from spade.behaviour import OneShotBehaviour
-from spade.behaviour import CyclicBehaviour
+from spade.behaviour import OneShotBehaviour, CyclicBehaviour
 from spade.message import Message
 import random
 import jsonpickle
@@ -9,15 +8,10 @@ from DadosMedicos import *
 from info_comum import *
 
 
-xmp_server = "desktop-j59unhi"
-
-
 class Medico(Agent):
-    turnos = ["turno1", "turno2", "turno3"]
-
     # Gera a sua especialidade e um turno aleatoriamente
     especialidade = random.choice(ESPECIALIDADES)
-    turno = random.choice(turnos)
+    turno = random.choice(TURNOS)
 
     def setup(self):
         behave1 = self.MedicoRegista()
@@ -31,14 +25,14 @@ class Medico(Agent):
     class MedicoRegista(OneShotBehaviour):
         async def run(self):
             #Manda msg ao Gestor de Medicos
-            mo = DadosMedicos(self.agent.jid, self.agent.especialidade, self.agent.turno)
-            msg = Message(to="GestorMedicos@" + xmp_server)
-            msg.body = jsonpickle.encode(mo)
+            dm = DadosMedicos(self.agent.jid, self.agent.especialidade, self.agent.turno)
+            msg = Message(to="GestorMedicos@" + XMPP_SERVER)
+            msg.body = jsonpickle.encode(dm)
             msg.set_metadata("performative", "inform")
 
             await self.send(msg)
             print(f"{self.agent.jid}: Registo enviado ao Gestor")
-            print(f"{self.agent.jid}: Especialidade = {self.agent.especialidade} Turno = {self.agent.turno}")
+            print(f"{self.agent.jid}: Especialidade = {self.agent.especialidade} | Turno = {self.agent.turno}")
 
 
     '''Comportamento onde o Médico trata o Paciente'''
@@ -53,15 +47,15 @@ class Medico(Agent):
                 if ord == "inform":
                     paciente = ordem.body
 
-                    msg = Message(to=paciente + "@" + xmp_server)
-                    msg.set_metadata("performative", "confirm")
+                    trat = Message(to=paciente + "@" + XMPP_SERVER)
+                    trat.set_metadata("performative", "confirm")
 
                     time.sleep(random.randint(2,10))
-                    await self.send(msg)
+                    await self.send(trat)
                     print(f"{self.agent.jid}: Paciente {paciente} tratado com sucesso")
 
-                    #Sinaliza o fim do tratamento ao Gestor de Medicos
-                    msg = Message(to="GestorMedicos@" + xmp_server)
+                    # Sinaliza o fim do tratamento ao Gestor de Medicos
+                    msg = Message(to="GestorMedicos@" + XMPP_SERVER)
                     msg.set_metadata("performative", "confirm")
                     msg.body = self.agent.jid + "," + self.agent.especialidade
                     await self.send(msg)
