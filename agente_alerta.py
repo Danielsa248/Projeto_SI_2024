@@ -38,7 +38,7 @@ class AgenteAlerta(Agent):
         async def run(self):
             alerta = await self.receive()
             if alerta and (alerta.get_metadata("performative") == "request"):
-                dados_paciente = jp.decode(alerta.body)  # Decidir que dados receber aqui
+                dados_paciente = jp.decode(alerta.body) # Decidir que dados receber aqui
                 grau = dados_paciente.get_grau()
                 self.agent.filas_de_espera[grau].append(dados_paciente)
                 # Caso queiramos enviar confirmação ao Agente Monitor, fazê-lo aqui
@@ -105,12 +105,12 @@ class AgenteAlerta(Agent):
                     msg_monitor = Message(to=AGENTE_MONITOR)
                     msg_monitor.set_metadata("performative", "inform")
                     msg_monitor.set_metadata("ontology", "atualizacao_grau")
-                    msg_monitor.body = dados_paciente  # Mantém o Agente Monitor atualizado sobre os graus de prioridade
+                    msg_monitor.body = dados_paciente # Mantém o Agente Monitor atualizado sobre os graus de prioridade
                     await self.send(msg_monitor)
 
                     msg_unidade = Message(to=AGENTE_UNIDADE)
                     msg_unidade.set_metadata("performative", "inform")
-                    msg_unidade.body = dados_paciente  # Mantém o Agente Unidade atualizado sobre os graus de prioridade
+                    msg_unidade.body = dados_paciente # Mantém o Agente Unidade atualizado sobre os graus de prioridade
                     await self.send(msg_unidade)
                     
                     # Vale a pena enviar atualização do grau de prioridade para o Paciente também?
