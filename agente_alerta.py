@@ -35,7 +35,7 @@ class AgenteAlerta(Agent):
 
         async def run(self):
             alerta = await self.receive()
-            if alerta and (alerta.get_metadata("performative") == "request"):
+            if alerta and (alerta.get_metadata("performative") == "inform"):
                 dados_paciente = jp.decode(alerta.body)
                 grau = dados_paciente.getgrauPrioridade()
                 self.agent.filas_de_espera[grau].append(dados_paciente)

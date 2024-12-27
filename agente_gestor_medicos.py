@@ -29,7 +29,7 @@ class GestorMedicos(Agent):
 
             if registo:
                 reg = registo.get_metadata("performative")
-                if reg == "inform":
+                if reg == "subscribe":
                     dados = jsonpickle.decode(registo.body)
                     jid = dados.getMedico()
                     especialidade = dados.getEspecialidade()

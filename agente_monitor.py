@@ -47,7 +47,7 @@ class AgenteMonitor(Agent):
                     self.agent.pacientes.pop(paciente_jid, None) # Para de monitorizar o paciente
                 elif grau >= LIMITE_ALERTA:
                     alerta = Message(to=AGENTE_ALERTA)
-                    alerta.set_metadata("performative", "request")
+                    alerta.set_metadata("performative", "inform")
                     alerta.body = dados_paciente
                     await self.send(alerta) # Remete os dados para o Agente Alerta
 

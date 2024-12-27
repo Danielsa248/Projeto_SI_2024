@@ -28,7 +28,7 @@ class Medico(Agent):
             dm = DadosMedicos(self.agent.jid, self.agent.especialidade, self.agent.turno)
             msg = Message(to="GestorMedicos@" + XMPP_SERVER)
             msg.body = jsonpickle.encode(dm)
-            msg.set_metadata("performative", "inform")
+            msg.set_metadata("performative", "subscribe")
 
             await self.send(msg)
             print(f"{self.agent.jid}: Registo enviado ao Gestor")
