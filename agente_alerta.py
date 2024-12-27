@@ -9,7 +9,7 @@ from info_comum import *
 
 # Classe representativa do Agente Alerta
 class AgenteAlerta(Agent):
-    # Estas filas de espera existem para balancear as prioridades de pedidos que chegam ao mesmo tempo
+    # Filas de espera relativas a cada grau de prioridade
     filas_de_espera = {grau: [] for grau in range(LIMITE_ALERTA, GRAU_MAX + 1)}
 
     async def setup(self):
@@ -22,14 +22,12 @@ class AgenteAlerta(Agent):
         self.add_behaviour(reavaliar_prioridades)
 
     '''
-    Comportamento referente à espera de alertas enviados
-    pelo Agente Monitor e posicionamento dos mesmos em
-    filas de espera conforme o grau de prioridade dos mesmos
-    
-    NOTA: Apenas faz sentido este comportamento existir
-    se assumirmos que este agente pode receber vários alertas
-    ao mesmo tempo e se tiver de reenviar pedidos de tratamento
-    em caso de rejeição de pedidos pelo Agente Gestor de Médicos.
+    Comportamento referente à espera de alertas enviados pelo Agente Monitor e
+    posicionamento dos mesmos em filas de espera conforme o seu grau de prioridade.
+
+    NOTA: Este comportamento parte do princípio que este agente pode receber vários
+    alertas em simultâneo e que pode ter de reenviar pedidos de tratamento em caso
+    de rejeição dos mesmos pelo Agente Gestor de Médicos.
     '''
     class EsperarAlertas(CyclicBehaviour):
         async def on_start(self):
@@ -38,19 +36,17 @@ class AgenteAlerta(Agent):
         async def run(self):
             alerta = await self.receive()
             if alerta and (alerta.get_metadata("performative") == "request"):
-                dados_paciente = jp.decode(alerta.body) # Decidir que dados receber aqui
-                grau = dados_paciente.get_grau()
+                dados_paciente = jp.decode(alerta.body)
+                grau = dados_paciente.getgrauPrioridade()
                 self.agent.filas_de_espera[grau].append(dados_paciente)
-                # Caso queiramos enviar confirmação ao Agente Monitor, fazê-lo aqui
 
     '''
     Comportamento referente ao envio de uma requisição de tratamento
-    ao Agente Gestor de Médicos e tratamento da resposta recebida
-    
-    NOTA: Este comportamento parte do princípio que os pedidos de tratamento
-    estão organizados em diferentes filas de prioridade e tenta que sejam
-    servidos de forma justa. Se o comportamento anterior não for necessário,
-    este comportamento tem de ser mudado.
+    ao Agente Gestor de Médicos e tratamento da resposta recebida.
+
+    NOTA: Este comportamento assume que os pedidos de tratamento estão organizados
+    em diferentes filas de espera e tenta que sejam servidos de forma justa, promovendo
+    o tratamento prioritário de pedidos mais urgentes, sem comprometer os restantes.
     '''
     class RequisitarTratamentos(CyclicBehaviour):
         async def on_start(self):
@@ -65,7 +61,7 @@ class AgenteAlerta(Agent):
                     # Envio dos dados para tentativa de tratamento
                     requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
                     requisicao.set_metadata("performative", "request")
-                    requisicao.body = jp.encode(dados_paciente) # Decidir o que é que estes dados levam
+                    requisicao.body = jp.encode(dados_paciente)
                     await self.send(requisicao)
 
                     # Processamento da resposta do Agente Gestor de Médicos
@@ -78,19 +74,18 @@ class AgenteAlerta(Agent):
                     elif resposta and (resposta.get_metadata("performative") == "confirm"):
                         self.agent.filas_de_espera[fila].remove(dados_paciente)
                         serviu_requisicao = True
-                        break # Regressa à fila de maior prioridade quando serve um pedido
+                        break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
 
-                fila = fila - 1
+                fila -= 1
 
     '''
-    Comportamento referente à atualização dos níveis de prioridade
-    de pacientes cujos alertas gerados não tenham sido atendidos ao
-    fim de X segundos, sendo trocada a fila de espera em que se encontram
+    Comportamento referente à atualização dos níveis de prioridade de
+    pacientes cujos alertas gerados não tenham sido atendidos ao fim
+    de X segundos, sendo trocada a fila de espera em que se encontram.
     
-    NOTA: Só faz sentido este comportamento existir se houverem diferentes
-    filas de espera com diferentes prioridades. De momento, este comportamento
-    apenas comunica alterações nos graus de prioridade com o Agente Monitor e
-    com o Agente Unidade. Isto poderá ser alterado.
+    NOTA: Este comportamento assume a existência de diferentes filas de espera, com
+    diferentes prioridades. Para além disso, comunica as alterações nos graus de
+    prioridade ao Agente Monitor e Agente Unidade, para efeitos de sincronização.
     '''
     class ReavaliarPrioridades(PeriodicBehaviour):
         async def on_start(self):
@@ -101,16 +96,16 @@ class AgenteAlerta(Agent):
                 for dados_paciente in self.agent.filas_de_espera[i][:]:
                     self.agent.filas_de_espera[i + 1].append(dados_paciente)
                     self.agent.filas_de_espera[i].remove(dados_paciente)
-                    
+
+                    # Sincronização com o Agente Monitor
                     msg_monitor = Message(to=AGENTE_MONITOR)
                     msg_monitor.set_metadata("performative", "inform")
                     msg_monitor.set_metadata("ontology", "atualizacao_grau")
-                    msg_monitor.body = dados_paciente # Mantém o Agente Monitor atualizado sobre os graus de prioridade
+                    msg_monitor.body = dados_paciente
                     await self.send(msg_monitor)
 
+                    # Sincronização com o Agente Unidade
                     msg_unidade = Message(to=AGENTE_UNIDADE)
                     msg_unidade.set_metadata("performative", "inform")
-                    msg_unidade.body = dados_paciente # Mantém o Agente Unidade atualizado sobre os graus de prioridade
+                    msg_unidade.body = dados_paciente
                     await self.send(msg_unidade)
-                    
-                    # Vale a pena enviar atualização do grau de prioridade para o Paciente também?
