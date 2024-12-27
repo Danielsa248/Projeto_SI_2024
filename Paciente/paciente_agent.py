@@ -15,7 +15,7 @@ class Paciente(Agent):
             print("Novo Paciente a ser adicionado à unidade")                      
             msg1 = Message(to=ic.AGENTE_UNIDADE)   
             msg1.set_metadata("performative", "inform")  
-            msg1.body = jsonpickle.encode(IP.infosPaciente(str(self.agent.jid),random.choice(ic.ESPECIALIDADES),random.randint(40,221),random.randint(6,34),random.randint(30,44),random.randint(ic.GRAU_MIN,ic.GRAU_MAX)))
+            msg1.body = jsonpickle.encode(IP.infosPaciente(str(self.agent.jid),random.choice(ic.ESPECIALIDADES),None,None,None,random.randint(ic.GRAU_MIN,ic.GRAU_MAX)))
             await self.send(msg1)
             print("Registo de Paciente "+ str(self.agent.jid) + " enviado à Unidade")
 
@@ -84,22 +84,23 @@ class Paciente(Agent):
                     await self.send(msg)
                     print("Novos dados enviados ao Monitor")
                 
-                elif p == 'refuse':
-                   
-                    # aqui manda mensagem ao monitor para eliminar este paciente da base de dados dos pacientes
-                    msg = Message(to=ic.AGENTE_MONITOR)     
-                    msg.set_metadata("performative", "request")  
-                    msg.body = (str(self.getjid())) # adicionar aqui o jid para ele saber o que tem de eliminar
-                    await self.send(msg)
-                    time.sleep(2)
-                    print("Confirmação: Paciente teve alta hospitalar, saiu do sistema de monitorização")
-                    await self.agent.stop()
-
+                
+                #elif p == 'refuse':
+                #   
+                #    # aqui manda mensagem ao monitor para eliminar este paciente da base de dados dos pacientes
+                #    msg = Message(to=ic.AGENTE_MONITOR)     
+                #    msg.set_metadata("performative", "request")  
+                #    msg.body = (str(self.getjid())) # adicionar aqui o jid para ele saber o que tem de eliminar
+                #    await self.send(msg)
+                #    time.sleep(2)
+                #    print("Confirmação: Paciente teve alta hospitalar, saiu do sistema de monitorização")
+                #    await self.agent.stop()
+                
 
 
                 else:
                     print("Did not received any message after 10 seconds")
-
+                
 
 
     async def setup(self):
