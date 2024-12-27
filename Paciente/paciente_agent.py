@@ -3,9 +3,9 @@ from spade.behaviour import CyclicBehaviour, PeriodicBehaviour, OneShotBehaviour
 from spade.message import Message
 import random
 import jsonpickle
-import time
 import infosPaciente as IP
 import info_comum as ic
+import asyncio
 
 class Paciente(Agent):
 
@@ -44,7 +44,7 @@ class Paciente(Agent):
                     msg.set_metadata("performative", "request")  
                     msg.body = (str(self.getjid())) # adicionar aqui o jid para ele saber o que tem de eliminar
                     await self.send(msg)
-                    time.sleep(2)
+                    await asyncio.sleep(2)
                     print("Confirmação: Paciente teve alta hospitalar, saiu da unidade de saúde")
                     await self.agent.stop()
 
