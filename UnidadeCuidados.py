@@ -3,8 +3,7 @@ import random as rand
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 from spade.message import Message
-import info_comum
-from info_comum import ESPECIALIDADES
+from info_comum import *
 
 
 class UnidadeCuidados(Agent):
