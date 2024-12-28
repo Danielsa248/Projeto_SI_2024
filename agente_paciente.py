@@ -59,21 +59,24 @@ class Paciente(Agent):
     class EsperarTratamento(CyclicBehaviour):
         async def run(self):
             msg = await self.receive()
-            print(f"{self.agent.jid}: Tenho esta msg - {msg}")
-            if msg and (msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"):
-                bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
-                bpm_max = BPM_CIMA_INICIAL - (0.2 * (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL))
-                self.set("bpm", random.randint(bpm_min, bpm_max))
+            if msg:
+                if (msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"):
+                    bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
+                    bpm_max = BPM_CIMA_INICIAL - (0.2 * (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL))
+                    self.set("bpm", random.randint(bpm_min, bpm_max))
 
-                bf_min = BF_BAIXO_INICIAL + 1
-                bf_max = BF_CIMA_INICIAL - 1
-                self.set("bf", random.randint(bf_min, bf_max))
+                    bf_min = BF_BAIXO_INICIAL + 1
+                    bf_max = BF_CIMA_INICIAL - 1
+                    self.set("bf", random.randint(bf_min, bf_max))
 
-                temp_min = TEMP_BAIXO_INICIAL + 1
-                temp_max = TEMP_CIMA_INICIAL - 1
-                self.set("temp", random.randint(temp_min, temp_max))
+                    temp_min = TEMP_BAIXO_INICIAL + 1
+                    temp_max = TEMP_CIMA_INICIAL - 1
+                    self.set("temp", random.randint(temp_min, temp_max))
 
-            await self.agent.enviar_dados.join()
+                await self.agent.enviar_dados.join()
+
+                #o monitor pode lhe enviar um refuse e ele pode gerar dados outravez
+                #o monitor envia lhe um unsubscribe para ele nao enviar mais dados
 
 
     class LibertarCama(CyclicBehaviour):
