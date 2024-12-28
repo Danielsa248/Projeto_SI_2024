@@ -19,6 +19,14 @@ class AgenteMonitor(Agent):
         self.add_behaviour(monitorizar_pacientes)
         self.add_behaviour(feedback_alerta)
 
+    def determinar_grau(self, dados_paciente):
+        #dividir em grau max + 1 intervalos
+        #fazer a media de todos
+
+
+
+
+
     '''
     Comportamento referente à monitorização constante dos Agentes Paciente, comunicando
     com o Agente Alerta quando o grau de prioridade determinado é elevado o suficiente.

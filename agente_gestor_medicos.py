@@ -6,11 +6,12 @@ import jsonpickle
 from info_comum import *
 
 
-class GestorMedicos(Agent):
+class AgenteGestorMedicos(Agent):
     medicos = {especialidade: [] for especialidade in ESPECIALIDADES}
     turno_atual = TURNOS[0]
 
     async def setup(self):
+        print(f"{self.jid}: A iniciar ...")
         behave1 = self.RegistaMedico()
         behave2 = self.OrdemMedico()
         behave3 = self.FimTratamento()
@@ -65,7 +66,7 @@ class GestorMedicos(Agent):
                             break
 
                     #Envia mensagem ao Agente Alerta para lhe informar sobre o pedido
-                    msg_alerta = Message(to="AgenteAlerta@" + XMPP_SERVER)
+                    msg_alerta = Message(to=AGENTE_ALERTA)
 
                     if med_encontrado:
                         msg_alerta.set_metadata("performative", "confirm")

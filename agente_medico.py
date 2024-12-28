@@ -4,16 +4,16 @@ from spade.behaviour import OneShotBehaviour, CyclicBehaviour
 from spade.message import Message
 import random
 import jsonpickle
-from DadosMedicos import *
+from classes.DadosMedicos import *
 from info_comum import *
 
 
 class Medico(Agent):
-    # Gera a sua especialidade e um turno aleatoriamente
-    especialidade = random.choice(ESPECIALIDADES)
-    turno = random.choice(TURNOS)
-
-    def setup(self):
+    async def setup(self):
+        print(f"{self.jid}: A iniciar ...")
+        # Gera a sua especialidade e um turno aleatoriamente
+        self.set("esp", random.choice(ESPECIALIDADES))
+        self.set("turno", random.choice(TURNOS))
         behave1 = self.MedicoRegista()
         behave2 = self.TrataPaciente()
         self.add_behaviour(behave1)
@@ -25,14 +25,13 @@ class Medico(Agent):
     class MedicoRegista(OneShotBehaviour):
         async def run(self):
             #Manda msg ao Gestor de Medicos
-            dm = DadosMedicos(self.agent.jid, self.agent.especialidade, self.agent.turno)
-            msg = Message(to="GestorMedicos@" + XMPP_SERVER)
+            dm = DadosMedicos(self.agent.jid, self.agent.get("esp"), self.agent.get("turno"))
+            msg = Message(to=AGENTE_GESTOR_MEDICOS)
             msg.body = jsonpickle.encode(dm)
             msg.set_metadata("performative", "subscribe")
 
             await self.send(msg)
             print(f"{self.agent.jid}: Registo enviado ao Gestor")
-            print(f"{self.agent.jid}: Especialidade = {self.agent.especialidade} | Turno = {self.agent.turno}")
 
 
     '''Comportamento onde o Médico trata o Paciente'''
@@ -47,7 +46,7 @@ class Medico(Agent):
                 if ord == "inform":
                     paciente = ordem.body
 
-                    trat = Message(to=paciente + "@" + XMPP_SERVER)
+                    trat = Message(to=paciente)
                     trat.set_metadata("performative", "confirm")
 
                     time.sleep(random.randint(2,10))
@@ -55,7 +54,7 @@ class Medico(Agent):
                     print(f"{self.agent.jid}: Paciente {paciente} tratado com sucesso")
 
                     # Sinaliza o fim do tratamento ao Gestor de Medicos
-                    msg = Message(to="GestorMedicos@" + XMPP_SERVER)
+                    msg = Message(to=AGENTE_GESTOR_MEDICOS)
                     msg.set_metadata("performative", "confirm")
-                    msg.body = self.agent.jid + "," + self.agent.especialidade
+                    msg.body = self.agent.jid + "," + self.agent.get("esp")
                     await self.send(msg)
