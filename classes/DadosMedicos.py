@@ -6,13 +6,13 @@ class DadosMedicos:
         self.especialidade = especialidade
         self.turno = turno
 
-    def getMedico(self):
+    def get_medico(self):
         return self.jid
 
-    def getEspecialidade(self):
+    def get_especialidade(self):
         return self.especialidade
 
-    def getTurno(self):
+    def get_turno(self):
         return self.turno
 
     def __str__(self):

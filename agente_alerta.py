@@ -63,6 +63,7 @@ class AgenteAlerta(Agent):
                     requisicao.set_metadata("performative", "request")
                     requisicao.body = jp.encode(dados_paciente)
                     await self.send(requisicao)
+                    print(f"Enviado o pedido {dados_paciente.get_jid()}")
 
                     # Processamento da resposta do Agente Gestor de Médicos
                     resposta = await self.receive()
@@ -71,9 +72,11 @@ class AgenteAlerta(Agent):
                         self.agent.filas_de_espera[fila].remove(dados_paciente)
                         self.agent.filas_de_espera[fila].insert(nova_posicao,
                                                                 dados_paciente) # "Puxa" o paciente de volta para o meio da fila
+                        print("De volta à fila")
                     elif resposta and (resposta.get_metadata("performative") == "confirm"):
                         self.agent.filas_de_espera[fila].remove(dados_paciente)
                         serviu_requisicao = True
+                        print("Servido")
                         break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
 
                 fila -= 1

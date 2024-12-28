@@ -5,7 +5,7 @@ import random
 import jsonpickle
 from classes.infosPaciente import *
 from info_comum import *
-import asyncio
+
 
 class Paciente(Agent):
 
@@ -39,6 +39,10 @@ class Paciente(Agent):
             if reply and reply.get_metadata("performative") == "refuse":
                 await self.agent.stop()
 
+            elif reply and (reply.get_metadata("performative") == "confirm") and (reply.get_metadata("ontology") == "registado"):
+                await self.agent.enviar_dados.join()
+
+
 
     class EnviarDados(OneShotBehaviour):
         async def run(self):
@@ -55,20 +59,19 @@ class Paciente(Agent):
     class EsperarTratamento(CyclicBehaviour):
         async def run(self):
             msg = await self.receive()
-            if msg:
-                p = msg.get_metadata('performative')
-                if p == 'confirm':
-                    bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
-                    bpm_max = BPM_CIMA_INICIAL - (0.2 * (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL))
-                    self.set("bpm", random.randint(bpm_min, bpm_max))
+            print(f"{self.agent.jid}: Tenho esta msg - {msg}")
+            if msg and (msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"):
+                bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
+                bpm_max = BPM_CIMA_INICIAL - (0.2 * (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL))
+                self.set("bpm", random.randint(bpm_min, bpm_max))
 
-                    bf_min = BF_BAIXO_INICIAL + 1
-                    bf_max = BF_CIMA_INICIAL - 1
-                    self.set("bf", random.randint(bf_min, bf_max))
+                bf_min = BF_BAIXO_INICIAL + 1
+                bf_max = BF_CIMA_INICIAL - 1
+                self.set("bf", random.randint(bf_min, bf_max))
 
-                    temp_min = TEMP_BAIXO_INICIAL + 1
-                    temp_max = TEMP_CIMA_INICIAL - 1
-                    self.set("temp", random.randint(temp_min, temp_max))
+                temp_min = TEMP_BAIXO_INICIAL + 1
+                temp_max = TEMP_CIMA_INICIAL - 1
+                self.set("temp", random.randint(temp_min, temp_max))
 
             await self.agent.enviar_dados.join()
 

@@ -26,15 +26,15 @@ class AgenteGestorMedicos(Agent):
 
     class RegistaMedico(CyclicBehaviour):
         async def run(self):
-            registo = await self.receive(timeout=5)
+            registo = await self.receive()
 
             if registo:
                 reg = registo.get_metadata("performative")
                 if reg == "subscribe":
                     dados = jsonpickle.decode(registo.body)
-                    jid = dados.getMedico()
-                    especialidade = dados.getEspecialidade()
-                    turno = dados.getTurno()
+                    jid = dados.get_medico()
+                    especialidade = dados.get_especialidade()
+                    turno = dados.get_turno()
 
                     if turno == self.agent.turno_atual:
                         self.agent.medicos[especialidade].append([jid, turno, True])
@@ -48,7 +48,7 @@ class AgenteGestorMedicos(Agent):
 
     class OrdemMedico(CyclicBehaviour):
         async def run(self):
-            requisicao = await self.receive(timeout=5)
+            requisicao = await self.receive()
 
             if requisicao:
                 req = requisicao.get_metadata("performative")
@@ -73,7 +73,7 @@ class AgenteGestorMedicos(Agent):
                         await self.send(msg_alerta)
 
                         # Envia mensagem ao Médico com a informação do paciente a ser tratado
-                        ordem = Message(to=medico)
+                        ordem = Message(to=str(medico))
                         ordem.set_metadata("performative", "inform")
                         ordem.body = paciente
                         await self.send(ordem)

@@ -46,8 +46,9 @@ class Medico(Agent):
                 if ord == "inform":
                     paciente = ordem.body
 
-                    trat = Message(to=paciente)
+                    trat = Message(to=str(paciente))
                     trat.set_metadata("performative", "confirm")
+                    trat.set_metadata("ontology", "tratado")
 
                     time.sleep(random.randint(2,10))
                     await self.send(trat)
@@ -56,5 +57,5 @@ class Medico(Agent):
                     # Sinaliza o fim do tratamento ao Gestor de Medicos
                     msg = Message(to=AGENTE_GESTOR_MEDICOS)
                     msg.set_metadata("performative", "confirm")
-                    msg.body = self.agent.jid + "," + self.agent.get("esp")
+                    msg.body = str(self.agent.jid) + "," + self.agent.get("esp")
                     await self.send(msg)

@@ -111,7 +111,7 @@ class AgenteUnidade(Agent):
 
         async def run(self):
 
-            msg = await self.receive(timeout=10)
+            msg = await self.receive()
             if msg:
                 msg_meta = msg.get_metadata("performative")
 
@@ -131,10 +131,10 @@ class AgenteUnidade(Agent):
                                 self.agent.salas["Cuidados Geral"][1] -= 1
                                 print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
 
-
                                 #mandar confirm
                                 msg_response = msg.make_reply()
                                 msg_response.set_metadata("performative", "confirm")
+                                msg_response.set_metadata("ontology", "registado")
                                 await self.send(msg_response)
 
                             else:
@@ -183,9 +183,6 @@ class AgenteUnidade(Agent):
                         msg.body = "Este paciente já está registado!..."
                         await self.send(msg_response)
 
-            else:
-                print("Agente {}:".format(self.agent.jid) + "não recebeu nenhuma mensagem passado 10 segundos")
-
 
 
     class updatePrioridadeBehav(CyclicBehaviour):
@@ -214,6 +211,3 @@ class AgenteUnidade(Agent):
                             responde = Message(to=utente.get_jid())
                             responde.set_metadata("performative", "unsubscribe")
                             await self.send(msg)
-
-            else:
-                print("Agente {}:".format(self.agent.jid) + "não recebeu nenhuma mensagem passado 10 segundos")
