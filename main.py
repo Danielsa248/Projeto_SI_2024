@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 5:
+    while num_medicos < 50:
         medico = Medico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         future.result()
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     pacientes = []
     num_pacientes = 0
-    while num_pacientes < 3:
+    while num_pacientes < 10:
         paciente = Paciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
         future = paciente.start(auto_register=True)
         future.result()
@@ -46,14 +46,14 @@ if __name__ == "__main__":
 
     while unidade.is_alive() and monitor.is_alive() and alerta.is_alive() and gestor_medicos.is_alive():
         try:
-            # A cada 3 segundos cria um paciente
+            '''# A cada 3 segundos cria um paciente
             for _ in range(10):
                 paciente = Paciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
                 future = paciente.start(auto_register=True)
                 future.result()
                 pacientes.append(paciente)
                 num_pacientes += 1
-                time.sleep(3)
+                time.sleep(3)'''
 
         except KeyboardInterrupt:
             print("Encerrando agentes...")

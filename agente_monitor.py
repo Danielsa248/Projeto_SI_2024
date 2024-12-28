@@ -20,11 +20,24 @@ class AgenteMonitor(Agent):
         self.add_behaviour(feedback_alerta)
 
     def determinar_grau(self, dados_paciente):
-        #dividir em grau max + 1 intervalos
-        #fazer a media de todos
+        bpm = dados_paciente.get_bpm()
+        temp = dados_paciente.get_temp()
+        bf = dados_paciente.get_bf()
 
+        grau_temp = GRAU_MAX - abs(temp - TEMP_IDEAL) / (TEMP_CIMA_INICIAL - TEMP_IDEAL) * (GRAU_MAX - GRAU_MIN)
+        grau_bf =  GRAU_MAX - abs(bf- BF_IDEAL) / (BF_CIMA_INICIAL - BF_IDEAL) * (GRAU_MAX - GRAU_MIN)
+        grau_bpm = GRAU_MAX // 2
 
+        if BPM_BAIXO_IDEAL <= bpm <= BPM_CIMA_IDEAL:
+            grau_bpm = GRAU_MIN
 
+        elif bpm < BPM_BAIXO_IDEAL:
+            grau_bpm = GRAU_MAX - (bpm - BPM_BAIXO_INICIAL) / (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL) * (GRAU_MAX - GRAU_MIN)
+
+        else:
+            grau_bpm = GRAU_MAX - (BPM_CIMA_INICIAL - bpm) / (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL) * (GRAU_MAX - GRAU_MIN)
+
+        return round((grau_temp + grau_bf + grau_bpm) / 3)
 
 
     '''
@@ -45,9 +58,9 @@ class AgenteMonitor(Agent):
                 (dados.get_metadata("ontology") == "dados_paciente")):
                 # Processamento dos dados recebidos
                 dados_paciente = jp.decode(dados.body)
-                paciente_jid = dados_paciente.getjid()
+                paciente_jid = dados_paciente.get_jid()
                 grau = self.agent.determinar_grau(dados_paciente)
-                dados_paciente.setgrauPrioridade(grau)
+                dados_paciente.set_grau(grau)
                 self.agent.pacientes[paciente_jid] = grau
 
                 # Interpretação dos dados recebidos
@@ -56,13 +69,13 @@ class AgenteMonitor(Agent):
                 elif grau >= LIMITE_ALERTA:
                     alerta = Message(to=AGENTE_ALERTA)
                     alerta.set_metadata("performative", "inform")
-                    alerta.body = dados_paciente
+                    alerta.body = jp.encode(dados_paciente)
                     await self.send(alerta) # Remete os dados para o Agente Alerta
 
                 # Sincronização com o Agente Unidade
                 atualizacao = Message(to=AGENTE_UNIDADE)
                 atualizacao.set_metadata("performative", "inform")
-                atualizacao.body = dados_paciente
+                atualizacao.body = jp.encode(dados_paciente)
                 await self.send(atualizacao)
 
     '''
@@ -82,6 +95,6 @@ class AgenteMonitor(Agent):
                 (dados.get_metadata("ontology") == "atualizacao_grau")):
                 # Processamento dos dados recebidos
                 dados_paciente = jp.decode(dados.body)
-                paciente_jid = dados_paciente.getjid()
-                grau = dados_paciente.getgrauPrioridade()
+                paciente_jid = dados_paciente.get_jid()
+                grau = dados_paciente.get_grau()
                 self.agent.pacientes[paciente_jid] = grau

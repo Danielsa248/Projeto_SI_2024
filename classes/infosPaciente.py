@@ -8,29 +8,40 @@ class infosPaciente:
         self.grauPrioridade = grauPrioridade
         
 
-    def getjid(self):
-        return self.jid  
-    def getespecialidade(self):
-        return self.especialidade 
-    def getbpm(self):
-        return self.bpm     # batimentos por minuto  (50 e 200)
-    def getbf(self):
-        return self.bf      # breath frequency     (8 e 30)
-    def gettemperatura(self):
-        return self.temperatura       # temperatura corporal  (33 e 42)
-    def getgrauPrioridade(self):
-        return self.grauPrioridade     # grau de prioridade   (1 e 10)
+    def get_jid(self):
+        return self.jid
 
-    def setjid(self,jid):
-        self.jid = jid 
-    def setespecialidade(self,especialidade):
-        self.especialidade = especialidade    
-    def setbpm(self,bpm):
+    def get_especialidade(self):
+        return self.especialidade
+
+    def get_bpm(self):
+        return self.bpm
+
+    def get_bf(self):
+        return self.bf
+
+    def get_temp(self):
+        return self.temperatura
+
+    def get_grau(self):
+        return self.grauPrioridade
+
+
+    def set_jid(self,jid):
+        self.jid = jid
+
+    def set_especialidade(self,especialidade):
+        self.especialidade = especialidade
+
+    def set_bpm(self,bpm):
         self.bpm = bpm
-    def setbf(self,bf):
+
+    def set_bf(self,bf):
         self.bf = bf
-    def settemperatura(self,temperatura):
+
+    def set_temp(self,temperatura):
         self.temperatura = temperatura
-    def setgrauPrioridade(self,grauPrioridade):
+
+    def set_grau(self,grauPrioridade):
         self.grauPrioridade = grauPrioridade
 

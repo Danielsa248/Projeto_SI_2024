@@ -31,7 +31,7 @@ class AgenteUnidade(Agent):
             if jid in values[0]:
                 return True
 
-    # REVER ESTA MERDA TODA...
+
     def reorganizeUtentes(self, especialidade, prioridade, paciente):
 
         lowprio = prioridade
@@ -119,15 +119,15 @@ class AgenteUnidade(Agent):
 
                     utente = jsonpickle.decode(msg.body)
 
-                    exists = self.agent.utenteExists(utente.getjid())
+                    exists = self.agent.utenteExists(utente.get_jid())
 
                     if not exists:
 
-                        if utente.getespecialidade() not in self.agent.salas:
+                        if utente.get_especialidade() not in self.agent.salas:
 
                             if self.agent.salas["Cuidados Geral"][1] > 0:
 
-                                self.agent.salas["Cuidados Geral"][0][utente.getjid()] = utente.getgrauPrioridade()
+                                self.agent.salas["Cuidados Geral"][0][utente.get_jid()] = utente.get_grau()
                                 self.agent.salas["Cuidados Geral"][1] -= 1
                                 print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
 
@@ -148,10 +148,10 @@ class AgenteUnidade(Agent):
                                 await self.send(msg_response)
 
                         else:
-                            if self.agent.salas[utente.getespecialidade()][1] > 0:
+                            if self.agent.salas[utente.get_especialidade()][1] > 0:
 
-                                self.agent.salas[utente.getespecialidade()][0][utente.getjid()] = utente.getgrauPrioridade()
-                                self.agent.salas[utente.getespecialidade()][1] -= 1
+                                self.agent.salas[utente.get_especialidade()][0][utente.get_jid()] = utente.get_grau()
+                                self.agent.salas[utente.get_especialidade()][1] -= 1
                                 print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
 
                                 msg_response = msg.make_reply()
@@ -160,7 +160,7 @@ class AgenteUnidade(Agent):
 
                             else:
                                 #função que distribui utentes com base nas prioridades
-                                success = self.agent.reorganizeUtentes(utente.getespecialidade(), utente.getgrauPrioridade(), utente.getjid())
+                                success = self.agent.reorganizeUtentes(utente.get_especialidade(), utente.get_grau(), utente.get_jid())
 
                                 if success:
                                     print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
@@ -201,17 +201,17 @@ class AgenteUnidade(Agent):
 
                     utente = jsonpickle.decode(msg.body)
 
-                    especialidade = self.agent.getEspecialidade(utente.getjid())
+                    especialidade = self.agent.getEspecialidade(utente.get_jid())
 
                     if especialidade is not None:
 
-                        if utente.getgrauPrioridade() != 0:
-                            self.agent.salas[especialidade][0][utente.getjid()] = utente.getgrauPrioridade()
+                        if utente.get_grau() != 0:
+                            self.agent.salas[especialidade][0][utente.get_jid()] = utente.get_grau()
 
                         else:
-                            self.agent.salas[especialidade][0].pop(utente.getjid())
+                            self.agent.salas[especialidade][0].pop(utente.get_jid())
                             self.agent.salas[especialidade][1] += 1
-                            responde = Message(to=utente.getjid())
+                            responde = Message(to=utente.get_jid())
                             responde.set_metadata("performative", "unsubscribe")
                             await self.send(msg)
 

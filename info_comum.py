@@ -17,7 +17,7 @@ GRAU_MAX = 9
 LIMITE_ALERTA = 5
 ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
-    "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Geral"
+    "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
 ]
 TURNOS = ["turno1", "turno2", "turno3"]
 

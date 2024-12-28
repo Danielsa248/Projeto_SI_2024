@@ -54,8 +54,8 @@ class AgenteGestorMedicos(Agent):
                 req = requisicao.get_metadata("performative")
                 if req == "request":
                     dados = jsonpickle.decode(requisicao.body)
-                    paciente = dados.getjid()
-                    especialidade = dados.getEspecialidade()
+                    paciente = dados.get_jid()
+                    especialidade = dados.get_especialidade()
 
                     med_encontrado = False
                     for med in self.agent.medicos[especialidade]:
@@ -73,7 +73,7 @@ class AgenteGestorMedicos(Agent):
                         await self.send(msg_alerta)
 
                         # Envia mensagem ao Médico com a informação do paciente a ser tratado
-                        ordem = Message(to=medico + "@" + XMPP_SERVER)
+                        ordem = Message(to=medico)
                         ordem.set_metadata("performative", "inform")
                         ordem.body = paciente
                         await self.send(ordem)

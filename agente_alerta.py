@@ -37,7 +37,7 @@ class AgenteAlerta(Agent):
             alerta = await self.receive()
             if alerta and (alerta.get_metadata("performative") == "inform"):
                 dados_paciente = jp.decode(alerta.body)
-                grau = dados_paciente.getgrauPrioridade()
+                grau = dados_paciente.get_grau()
                 self.agent.filas_de_espera[grau].append(dados_paciente)
 
     '''
@@ -101,11 +101,11 @@ class AgenteAlerta(Agent):
                     msg_monitor = Message(to=AGENTE_MONITOR)
                     msg_monitor.set_metadata("performative", "inform")
                     msg_monitor.set_metadata("ontology", "atualizacao_grau")
-                    msg_monitor.body = dados_paciente
+                    msg_monitor.body = jp.encode(dados_paciente)
                     await self.send(msg_monitor)
 
                     # Sincronização com o Agente Unidade
                     msg_unidade = Message(to=AGENTE_UNIDADE)
                     msg_unidade.set_metadata("performative", "inform")
-                    msg_unidade.body = dados_paciente
+                    msg_unidade.body = jp.encode(dados_paciente)
                     await self.send(msg_unidade)
