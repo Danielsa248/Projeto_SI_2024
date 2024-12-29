@@ -2,6 +2,7 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
 
+import asyncio
 import jsonpickle as jp
 
 from info_comum import *
@@ -20,6 +21,8 @@ class AgenteAlerta(Agent):
         self.add_behaviour(esperar_alerta)
         self.add_behaviour(requisitar_tratamento)
         self.add_behaviour(reavaliar_prioridades)
+        self.lock = asyncio.Lock()  # Usado para prevenir "race conditions" quando
+                                    # dois Behaviours acedem à mesma lista de espera
 
 
     '''
@@ -50,31 +53,33 @@ class AgenteAlerta(Agent):
     '''
     class RequisitarTratamentos(CyclicBehaviour):
         async def run(self):
-            fila = GRAU_MAX
-            serviu_requisicao = False
+            async with self.agent.lock:
+                fila = GRAU_MAX
+                serviu_requisicao = False
 
-            while (fila >= LIMITE_ALERTA) and not serviu_requisicao:
-                for dados_paciente in self.agent.filas_de_espera[fila][:]:
-                    # Envio dos dados para tentativa de tratamento
-                    requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
-                    requisicao.set_metadata("performative", "request")
-                    requisicao.body = jp.encode(dados_paciente)
-                    await self.send(requisicao)
-                    print(f"{self.agent.jid}: Enviado o pedido de tratamento de {dados_paciente.get_jid()}.")
+                while (fila >= LIMITE_ALERTA) and not serviu_requisicao:
+                    for dados_paciente in self.agent.filas_de_espera[fila][:]:
+                        # Envio dos dados para tentativa de tratamento
+                        requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
+                        requisicao.set_metadata("performative", "request")
+                        requisicao.body = jp.encode(dados_paciente)
+                        await self.send(requisicao)
+                        print(f"{self.agent.jid}: Enviado o pedido de tratamento de {dados_paciente.get_jid()}.")
 
-                    # Processamento da resposta do Agente Gestor de Médicos
-                    resposta = await self.receive(timeout=5)
-                    if resposta and (resposta.get_metadata("performative") == "refuse"):
-                        nova_posicao = len(self.agent.filas_de_espera[fila]) // 2
-                        self.agent.filas_de_espera[fila].remove(dados_paciente)
-                        self.agent.filas_de_espera[fila].insert(nova_posicao, dados_paciente) # "Puxa" o paciente de volta para o meio da fila
-                        print(f"{self.agent.jid}: O pedido de tratamento de {dados_paciente.get_jid()} regressou à fila de espera.")
-                    elif resposta and (resposta.get_metadata("performative") == "confirm"):
-                        serviu_requisicao = True
-                        print(f"{self.agent.jid}: O pedido de tratamento de {dados_paciente.get_jid()} foi cumprido.")
-                        break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
+                        # Processamento da resposta do Agente Gestor de Médicos
+                        resposta = await self.receive(timeout=5)
+                        if resposta and (resposta.get_metadata("performative") == "refuse"):
+                            nova_posicao = len(self.agent.filas_de_espera[fila]) // 2
+                            self.agent.filas_de_espera[fila].remove(dados_paciente)
+                            self.agent.filas_de_espera[fila].insert(nova_posicao, dados_paciente) # "Puxa" o paciente de volta para o meio da fila
+                            print(f"{self.agent.jid}: O pedido de tratamento de {dados_paciente.get_jid()} regressou à fila de espera.")
+                        elif resposta and (resposta.get_metadata("performative") == "confirm"):
+                            self.agent.filas_de_espera[fila].remove(dados_paciente)
+                            print(f"{self.agent.jid}: O pedido de tratamento de {dados_paciente.get_jid()} foi cumprido.")
+                            serviu_requisicao = True
+                            break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
 
-                fila -= 1
+                    fila -= 1
 
 
     '''
@@ -88,21 +93,22 @@ class AgenteAlerta(Agent):
     '''
     class ReavaliarPrioridades(PeriodicBehaviour):
         async def run(self):
-            for i in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
-                for dados_paciente in self.agent.filas_de_espera[i][:]:
-                    self.agent.filas_de_espera[i + 1].append(dados_paciente)
-                    self.agent.filas_de_espera[i].remove(dados_paciente)
-                    print(f"{self.agent.jid}: Subiu o grau de prioridade de {dados_paciente.get_jid()}.")
+            async with self.agent.lock:
+                for i in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
+                    for dados_paciente in self.agent.filas_de_espera[i][:]:
+                        self.agent.filas_de_espera[i + 1].append(dados_paciente)
+                        self.agent.filas_de_espera[i].remove(dados_paciente)
+                        print(f"{self.agent.jid}: Subiu o grau de prioridade de {dados_paciente.get_jid()}.")
 
-                    # Sincronização com o Agente Monitor
-                    msg_monitor = Message(to=AGENTE_MONITOR)
-                    msg_monitor.set_metadata("performative", "inform")
-                    msg_monitor.set_metadata("ontology", "atualizacao_grau")
-                    msg_monitor.body = jp.encode(dados_paciente)
-                    await self.send(msg_monitor)
+                        # Sincronização com o Agente Monitor
+                        msg_monitor = Message(to=AGENTE_MONITOR)
+                        msg_monitor.set_metadata("performative", "inform")
+                        msg_monitor.set_metadata("ontology", "atualizacao_grau")
+                        msg_monitor.body = jp.encode(dados_paciente)
+                        await self.send(msg_monitor)
 
-                    # Sincronização com o Agente Unidade
-                    msg_unidade = Message(to=AGENTE_UNIDADE)
-                    msg_unidade.set_metadata("performative", "inform")
-                    msg_unidade.body = jp.encode(dados_paciente)
-                    await self.send(msg_unidade)
+                        # Sincronização com o Agente Unidade
+                        msg_unidade = Message(to=AGENTE_UNIDADE)
+                        msg_unidade.set_metadata("performative", "inform")
+                        msg_unidade.body = jp.encode(dados_paciente)
+                        await self.send(msg_unidade)

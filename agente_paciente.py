@@ -12,7 +12,7 @@ from info_comum import *
 class Paciente(Agent):
 
     async def setup(self):
-        print(f"{self.jid}: A iniciar ...")
+        print(f"{self.jid}: A iniciar...")
         self.set("bpm", random.randint(BPM_BAIXO_INICIAL,BPM_CIMA_INICIAL))
         self.set("bf", random.randint(BF_BAIXO_INICIAL,BF_CIMA_INICIAL))
         self.set("temp", random.randint(TEMP_BAIXO_INICIAL,TEMP_CIMA_INICIAL))
@@ -89,7 +89,7 @@ class Paciente(Agent):
                 await self.agent.enviar_dados.join()
 
             elif msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "stop_dados"):
-                await self.kill()
+                self.kill()
 
 
     # Termina a execução quando o Agente Unidade confirma a saída do paciente da UCI
