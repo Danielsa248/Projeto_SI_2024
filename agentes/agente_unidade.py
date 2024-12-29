@@ -6,7 +6,7 @@ import asyncio
 import jsonpickle
 import random as rand
 
-from Projeto_SI_2024.info_comum import *
+from info_comum import *
 
 
 class AgenteUnidade(Agent):

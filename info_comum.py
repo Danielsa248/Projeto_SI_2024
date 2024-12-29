@@ -3,7 +3,7 @@
 
 # Servidor
 SERVERS = ["192.168.35.1", "desktop-j59unhi"]
-XMPP_SERVER = SERVERS[0] # Placeholder para o endereço do servidor XMPP
+XMPP_SERVER = SERVERS[1] # Placeholder para o endereço do servidor XMPP
 PASSWORD = "NOPASSWORD"
 
 # JIDs

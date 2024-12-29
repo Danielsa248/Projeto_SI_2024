@@ -4,7 +4,7 @@ from spade.message import Message
 
 import jsonpickle as jp
 
-from Projeto_SI_2024.info_comum import *
+from info_comum import *
 
 
 # Classe representativa do Agente Monitor
@@ -29,16 +29,16 @@ class AgenteMonitor(Agent):
         temp = dados_paciente.get_temp()
         bf = dados_paciente.get_bf()
 
-        grau_temp = GRAU_MAX - abs(temp - TEMP_IDEAL) / (TEMP_CIMA_INICIAL - TEMP_IDEAL) * (GRAU_MAX - GRAU_MIN)
-        grau_bf =  GRAU_MAX - abs(bf- BF_IDEAL) / (BF_CIMA_INICIAL - BF_IDEAL) * (GRAU_MAX - GRAU_MIN)
+        grau_temp = (GRAU_MAX - abs(temp - TEMP_IDEAL)) / ((TEMP_CIMA_INICIAL - TEMP_IDEAL) * (GRAU_MAX - GRAU_MIN))
+        grau_bf =  (GRAU_MAX - abs(bf- BF_IDEAL)) / ((BF_CIMA_INICIAL - BF_IDEAL) * (GRAU_MAX - GRAU_MIN))
         grau_bpm = GRAU_MAX // 2
 
         if BPM_BAIXO_IDEAL <= bpm <= BPM_CIMA_IDEAL:
             grau_bpm = GRAU_MIN
         elif bpm < BPM_BAIXO_IDEAL:
-            grau_bpm = GRAU_MAX - (bpm - BPM_BAIXO_INICIAL) / (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL) * (GRAU_MAX - GRAU_MIN)
+            grau_bpm = (GRAU_MAX - (bpm - BPM_BAIXO_INICIAL)) / ((BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL) * (GRAU_MAX - GRAU_MIN))
         else:
-            grau_bpm = GRAU_MAX - (BPM_CIMA_INICIAL - bpm) / (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL) * (GRAU_MAX - GRAU_MIN)
+            grau_bpm = (GRAU_MAX - (BPM_CIMA_INICIAL - bpm)) / ((BPM_CIMA_INICIAL - BPM_CIMA_IDEAL) * (GRAU_MAX - GRAU_MIN))
 
         return round((grau_temp + grau_bf + grau_bpm) / 3)
 

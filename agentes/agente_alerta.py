@@ -5,7 +5,7 @@ from spade.message import Message
 import asyncio
 import jsonpickle as jp
 
-from Projeto_SI_2024.info_comum import *
+from info_comum import *
 
 
 # Classe representativa do Agente Alerta

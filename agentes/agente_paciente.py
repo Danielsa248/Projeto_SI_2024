@@ -1,3 +1,5 @@
+import time
+
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
@@ -5,8 +7,8 @@ from spade.message import Message
 import random
 import jsonpickle
 
-from Projeto_SI_2024.classes.dados_paciente import *
-from Projeto_SI_2024.info_comum import *
+from classes.dados_paciente import *
+from info_comum import *
 
 
 class Paciente(Agent):
@@ -62,8 +64,12 @@ class Paciente(Agent):
 
         async def run(self):
             msg = await self.receive()
-            if msg and (msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"):
-                bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
+            if msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "stop_dados"):
+                self.kill()
+
+            elif (msg and (msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"))\
+                    or (msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados")):
+                '''bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
                 bpm_max = BPM_CIMA_INICIAL - (0.2 * (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL))
                 self.set("bpm", random.randint(bpm_min, bpm_max))
 
@@ -73,7 +79,12 @@ class Paciente(Agent):
                 temp_max = TEMP_CIMA_INICIAL - 1
                 self.set("temp", random.randint(temp_min, temp_max))
 
-                self.set("bf", random.randint(bf_min, bf_max))
+                self.set("bf", random.randint(bf_min, bf_max))'''
+
+                self.set("bpm", (BPM_CIMA_IDEAL + BPM_BAIXO_INICIAL)/2)
+                self.set("temp", TEMP_IDEAL)
+                self.set("bf", BF_IDEAL)
+
 
                 dados = Message(to=AGENTE_MONITOR)
                 dados.set_metadata("performative", "inform")
@@ -83,25 +94,26 @@ class Paciente(Agent):
                                   self.agent.get("bf"), self.agent.get("temp"), None))
                 await self.send(dados)
 
-            elif msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"):
+            '''elif msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"):
                 dados = Message(to=AGENTE_MONITOR)
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
                     DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
                                   self.agent.get("bf"), self.agent.get("temp"), None))
-                await self.send(dados)
+                await self.send(dados)'''
 
-            elif msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "stop_dados"):
-                self.kill()
+
 
 
     # Termina a execução quando o Agente Unidade confirma a saída do paciente da UCI
     class LibertarCama(CyclicBehaviour):
         async def run(self):
-            msg = await self.receive()
-            if msg:
-                p = msg.get_metadata('performative')
-                if p == 'unsubscribe':
-                    print(f"{self.agent.jid}: Estou curado.")
-                    await self.agent.stop()
+            msg = await self.receive(timeout=10)
+            if msg and msg.get_metadata("performative") == "unsubscribe":
+                print("Depois da msg!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print(msg.get_metadata("performative"))
+
+                print(f"{self.agent.jid}: ESTOU CURADO!!!!!!!!!!!!!!!!!!")
+                time.sleep(2)
+                await self.agent.stop()

@@ -1,9 +1,9 @@
-from Projeto_SI_2024.agentes.agente_paciente import *
-from Projeto_SI_2024.agentes.agente_unidade import *
-from Projeto_SI_2024.agentes.agente_monitor import *
-from Projeto_SI_2024.agentes.agente_alerta import *
-from Projeto_SI_2024.agentes.agente_gestor_medicos import *
-from Projeto_SI_2024.agentes.agente_medico import *
+from agentes.agente_paciente import *
+from agentes.agente_unidade import *
+from agentes.agente_monitor import *
+from agentes.agente_alerta import *
+from agentes.agente_gestor_medicos import *
+from agentes.agente_medico import *
 from info_comum import *
 
 from spade import quit_spade
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 1:
+    while num_medicos < 50:
         medico = Medico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         future.result()
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     pacientes = []
     futures = []
     num_pacientes = 0
-    while num_pacientes < 10:
+    while num_pacientes < 3:
         paciente = Paciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
         future = paciente.start(auto_register=True)
         futures.append(future)
