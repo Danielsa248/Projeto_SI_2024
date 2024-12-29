@@ -4,7 +4,7 @@ from spade.message import Message
 
 import jsonpickle as jp
 
-from info_comum import *
+from Projeto_SI_2024.info_comum import *
 
 
 # Classe representativa do Agente Monitor
