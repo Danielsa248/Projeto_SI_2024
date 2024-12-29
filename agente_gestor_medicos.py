@@ -11,7 +11,7 @@ class AgenteGestorMedicos(Agent):
     turno_atual = TURNOS[0]
 
     async def setup(self):
-        print(f"{self.jid}: A iniciar ...")
+        print(f"{self.jid}: A iniciar...")
         behave1 = self.RegistaMedico()
         behave2 = self.OrdemMedico()
         behave3 = self.FimTratamento()
@@ -80,16 +80,16 @@ class AgenteGestorMedicos(Agent):
                         print(f"{self.agent.jid}: Médico {medico} requisitado para o Paciente {paciente}")
 
                     else:
+                        print(f"{self.agent.jid}: Nenhum Médico está disponível para o Paciente {paciente}")
                         msg_alerta.set_metadata("performative", "refuse")
                         await self.send(msg_alerta)
-                        print(f"{self.agent.jid}: Nenhum Médico está disponível para o Paciente {paciente}")
 
 
     '''Comportamento que espera que um Médico termine um tratamento'''
 
     class FimTratamento(CyclicBehaviour):
         async def run(self):
-            conclusao = await self.receive(timeout=5)
+            conclusao = await self.receive()
 
             if conclusao:
                 con = conclusao.get_metadata("performative")

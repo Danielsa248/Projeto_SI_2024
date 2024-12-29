@@ -21,6 +21,7 @@ class AgenteAlerta(Agent):
         self.add_behaviour(requisitar_tratamento)
         self.add_behaviour(reavaliar_prioridades)
 
+
     '''
     Comportamento referente à espera de alertas enviados pelo Agente Monitor e
     posicionamento dos mesmos em filas de espera conforme o seu grau de prioridade.
@@ -30,15 +31,14 @@ class AgenteAlerta(Agent):
     de rejeição dos mesmos pelo Agente Gestor de Médicos.
     '''
     class EsperarAlertas(CyclicBehaviour):
-        async def on_start(self):
-            print(f"{self.agent.jid}: Pronto para receber alertas.")
-
         async def run(self):
             alerta = await self.receive()
             if alerta and (alerta.get_metadata("performative") == "inform"):
                 dados_paciente = jp.decode(alerta.body)
                 grau = dados_paciente.get_grau()
                 self.agent.filas_de_espera[grau].append(dados_paciente)
+                print(f"{self.agent.jid}: Recebido um alerta para o tratamento de {dados_paciente.get_jid()}.")
+
 
     '''
     Comportamento referente ao envio de uma requisição de tratamento
@@ -49,9 +49,6 @@ class AgenteAlerta(Agent):
     o tratamento prioritário de pedidos mais urgentes, sem comprometer os restantes.
     '''
     class RequisitarTratamentos(CyclicBehaviour):
-        async def on_start(self):
-            print(f"{self.agent.jid}: Pronto para requisitar tratamentos.")
-
         async def run(self):
             fila = GRAU_MAX
             serviu_requisicao = False
@@ -63,23 +60,22 @@ class AgenteAlerta(Agent):
                     requisicao.set_metadata("performative", "request")
                     requisicao.body = jp.encode(dados_paciente)
                     await self.send(requisicao)
-                    print(f"Enviado o pedido {dados_paciente.get_jid()}")
+                    print(f"{self.agent.jid}: Enviado o pedido de tratamento de {dados_paciente.get_jid()}.")
 
                     # Processamento da resposta do Agente Gestor de Médicos
-                    resposta = await self.receive()
+                    resposta = await self.receive(timeout=5)
                     if resposta and (resposta.get_metadata("performative") == "refuse"):
                         nova_posicao = len(self.agent.filas_de_espera[fila]) // 2
                         self.agent.filas_de_espera[fila].remove(dados_paciente)
-                        self.agent.filas_de_espera[fila].insert(nova_posicao,
-                                                                dados_paciente) # "Puxa" o paciente de volta para o meio da fila
-                        print("De volta à fila")
+                        self.agent.filas_de_espera[fila].insert(nova_posicao, dados_paciente) # "Puxa" o paciente de volta para o meio da fila
+                        print(f"{self.agent.jid}: O pedido de tratamento de {dados_paciente.get_jid()} regressou à fila de espera.")
                     elif resposta and (resposta.get_metadata("performative") == "confirm"):
-                        self.agent.filas_de_espera[fila].remove(dados_paciente)
                         serviu_requisicao = True
-                        print("Servido")
+                        print(f"{self.agent.jid}: O pedido de tratamento de {dados_paciente.get_jid()} foi cumprido.")
                         break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
 
                 fila -= 1
+
 
     '''
     Comportamento referente à atualização dos níveis de prioridade de
@@ -91,14 +87,12 @@ class AgenteAlerta(Agent):
     prioridade ao Agente Monitor e Agente Unidade, para efeitos de sincronização.
     '''
     class ReavaliarPrioridades(PeriodicBehaviour):
-        async def on_start(self):
-            print(f"{self.agent.jid}: Pronto para reavaliar prioridades.")
-
         async def run(self):
             for i in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
                 for dados_paciente in self.agent.filas_de_espera[i][:]:
                     self.agent.filas_de_espera[i + 1].append(dados_paciente)
                     self.agent.filas_de_espera[i].remove(dados_paciente)
+                    print(f"{self.agent.jid}: Subiu o grau de prioridade de {dados_paciente.get_jid()}.")
 
                     # Sincronização com o Agente Monitor
                     msg_monitor = Message(to=AGENTE_MONITOR)

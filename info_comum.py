@@ -2,14 +2,15 @@
 # sistema e incluem JIDs, endereço do servidor XMPP e outros parâmetros globais
 
 # Servidor
-XMPP_SERVER = "desktop-j59unhi" #"192.168.35.1" # Placeholder para o endereço do servidor XMPP
+SERVERS = ["192.168.35.1", "desktop-j59unhi"]
+XMPP_SERVER = SERVERS[0] # Placeholder para o endereço do servidor XMPP
 PASSWORD = "NOPASSWORD"
 
 # JIDs
-AGENTE_UNIDADE = f"AgenteUnidade@{XMPP_SERVER}" # Substituir pelo JID do Agente Unidade
-AGENTE_MONITOR = f"AgenteMonitor@{XMPP_SERVER}" # Substituir pelo JID do Agente Monitor
-AGENTE_ALERTA = f"AgenteAlerta@{XMPP_SERVER}" # Substituir pelo JID do Agente Alerta
-AGENTE_GESTOR_MEDICOS = f"AgenteGestorMedicos@{XMPP_SERVER}" # Substituir pelo JID do Gestor de Médicos
+AGENTE_UNIDADE = f"Unidade@{XMPP_SERVER}"
+AGENTE_MONITOR = f"Monitor@{XMPP_SERVER}"
+AGENTE_ALERTA = f"Alerta@{XMPP_SERVER}"
+AGENTE_GESTOR_MEDICOS = f"GestorMedicos@{XMPP_SERVER}"
 
 # Constantes globais
 GRAU_MIN = 0
@@ -34,5 +35,3 @@ BF_BAIXO_INICIAL = 6
 BF_CIMA_INICIAL = 34
 TEMP_BAIXO_INICIAL = 30
 TEMP_CIMA_INICIAL = 44
-
-

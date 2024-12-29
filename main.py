@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 50:
+    while num_medicos < 5:
         medico = Medico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         future.result()
@@ -36,13 +36,16 @@ if __name__ == "__main__":
         num_medicos += 1
 
     pacientes = []
+    futures = []
     num_pacientes = 0
     while num_pacientes < 10:
         paciente = Paciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
         future = paciente.start(auto_register=True)
-        future.result()
+        futures.append(future)
         pacientes.append(paciente)
         num_pacientes += 1
+    for future in futures:
+        future.result()
 
     while unidade.is_alive() and monitor.is_alive() and alerta.is_alive() and gestor_medicos.is_alive():
         try:

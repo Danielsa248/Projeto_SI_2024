@@ -11,7 +11,7 @@ class AgenteUnidade(Agent):
     salas = {}
 
     async def setup(self):
-        print("Agente Unidade de Cuidados: {}".format(self.jid) + " starting...")
+        print(f"{self.jid}: A iniciar...")
 
         for esp in ESPECIALIDADES:
             self.salas[esp] = [{}, rand.randint(8,15)]
@@ -129,7 +129,7 @@ class AgenteUnidade(Agent):
 
                                 self.agent.salas["Cuidados Geral"][0][utente.get_jid()] = utente.get_grau()
                                 self.agent.salas["Cuidados Geral"][1] -= 1
-                                print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
+                                print(f"{self.agent.jid}: Registou {msg.sender}.")
 
                                 #mandar confirm
                                 msg_response = msg.make_reply()
@@ -139,7 +139,7 @@ class AgenteUnidade(Agent):
 
                             else:
                                 #mudar e tirar o menor prioridade?
-                                print("Agente {}:".format(self.agent.jid) + "não conseguiu registar paciente{}!".format(msg.sender) + "devido a falta de camas")
+                                print(f"{self.agent.jid}: Não conseguiu registar {msg.sender} devido à falta de camas.")
 
 
                                 #mandar refuse
@@ -152,7 +152,7 @@ class AgenteUnidade(Agent):
 
                                 self.agent.salas[utente.get_especialidade()][0][utente.get_jid()] = utente.get_grau()
                                 self.agent.salas[utente.get_especialidade()][1] -= 1
-                                print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
+                                print(f"{self.agent.jid}: Registou {msg.sender}.")
 
                                 msg_response = msg.make_reply()
                                 msg_response.set_metadata("performative", "confirm")
@@ -163,7 +163,7 @@ class AgenteUnidade(Agent):
                                 success = self.agent.reorganizeUtentes(utente.get_especialidade(), utente.get_grau(), utente.get_jid())
 
                                 if success:
-                                    print("Agente {}:".format(self.agent.jid) + "registou paciente {}!".format(msg.sender))
+                                    print(f"{self.agent.jid}: Registou {msg.sender}.")
 
                                     # mandar confirm
                                     msg_response = msg.make_reply()
@@ -171,7 +171,7 @@ class AgenteUnidade(Agent):
                                     await self.send(msg_response)
 
                                 else:
-                                    print("Agente {}:".format(self.agent.jid) + "não conseguiu registar paciente{}!".format(msg.sender) + "devido a falta de camas")
+                                    print(f"{self.agent.jid}: Não conseguiu registar {msg.sender} devido à falta de camas.")
 
                                     msg_response = msg.make_reply()
                                     msg_response.set_metadata("performative", "refuse")

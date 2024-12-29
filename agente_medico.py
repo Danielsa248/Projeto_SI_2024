@@ -10,7 +10,7 @@ from info_comum import *
 
 class Medico(Agent):
     async def setup(self):
-        print(f"{self.jid}: A iniciar ...")
+        print(f"{self.jid}: A iniciar...")
         # Gera a sua especialidade e um turno aleatoriamente
         self.set("esp", random.choice(ESPECIALIDADES))
         self.set("turno", random.choice(TURNOS))

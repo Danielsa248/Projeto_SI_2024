@@ -19,6 +19,11 @@ class AgenteMonitor(Agent):
         self.add_behaviour(monitorizar_pacientes)
         self.add_behaviour(feedback_alerta)
 
+
+    '''
+    Função auxiliar utilizada para determinar o grau de prioridade
+    de um paciente com base nos dados enviados pelo mesmo.
+    '''
     def determinar_grau(self, dados_paciente):
         bpm = dados_paciente.get_bpm()
         temp = dados_paciente.get_temp()
@@ -30,10 +35,8 @@ class AgenteMonitor(Agent):
 
         if BPM_BAIXO_IDEAL <= bpm <= BPM_CIMA_IDEAL:
             grau_bpm = GRAU_MIN
-
         elif bpm < BPM_BAIXO_IDEAL:
             grau_bpm = GRAU_MAX - (bpm - BPM_BAIXO_INICIAL) / (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL) * (GRAU_MAX - GRAU_MIN)
-
         else:
             grau_bpm = GRAU_MAX - (BPM_CIMA_INICIAL - bpm) / (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL) * (GRAU_MAX - GRAU_MIN)
 
@@ -49,9 +52,6 @@ class AgenteMonitor(Agent):
     é igual ou menor ao valor mínimo definido para esse parâmetro (GRAU_MIN).
     '''
     class MonitorizarPacientes(CyclicBehaviour):
-        async def on_start(self):
-            print(f"{self.agent.jid}: Pronto para monitorizar pacientes.")
-
         async def run(self):
             dados = await self.receive()
             if (dados and (dados.get_metadata("performative") == "inform") and
@@ -60,23 +60,39 @@ class AgenteMonitor(Agent):
                 dados_paciente = jp.decode(dados.body)
                 paciente_jid = dados_paciente.get_jid()
                 grau = self.agent.determinar_grau(dados_paciente)
+                print(f"{self.agent.jid}: Os dados de {paciente_jid} têm gravidade de grau {grau}.")
                 dados_paciente.set_grau(grau)
                 self.agent.pacientes[paciente_jid] = grau
 
-                # Interpretação dos dados recebidos
+                # O paciente pode parar de enviar dados médicos
                 if grau <= GRAU_MIN:
-                    self.agent.pacientes.pop(paciente_jid, None) # Para de monitorizar o paciente
+                    print(f"{self.agent.jid}: O paciente {paciente_jid} vai deixar de ser monitorizado.")
+                    self.agent.pacientes.pop(paciente_jid, None)
+                    resposta_paciente = Message(to=paciente_jid)
+                    resposta_paciente.set_metadata("performative", "refuse")
+                    resposta_paciente.set_metadata("ontology", "stop_dados")
+                    await self.send(resposta_paciente)
+                # Os dados serão reencaminhados para o Agente Alerta
                 elif grau >= LIMITE_ALERTA:
+                    print(f"{self.agent.jid}: Os dados de {paciente_jid} serão reencaminhados para o Agente Alerta.")
                     alerta = Message(to=AGENTE_ALERTA)
                     alerta.set_metadata("performative", "inform")
                     alerta.body = jp.encode(dados_paciente)
-                    await self.send(alerta) # Remete os dados para o Agente Alerta
+                    await self.send(alerta)
+                # O paciente deve continuar a enviar dados médicos
+                else:
+                    print(f"{self.agent.jid}: O paciente {paciente_jid} continuará a ser monitorizado.")
+                    resposta_paciente = Message(to=paciente_jid)
+                    resposta_paciente.set_metadata("performative", "refuse")
+                    resposta_paciente.set_metadata("ontology", "novos_dados")
+                    await self.send(resposta_paciente)
 
                 # Sincronização com o Agente Unidade
                 atualizacao = Message(to=AGENTE_UNIDADE)
                 atualizacao.set_metadata("performative", "inform")
                 atualizacao.body = jp.encode(dados_paciente)
                 await self.send(atualizacao)
+
 
     '''
     Comportamento referente à receção de atualizações nos graus de prioridade
@@ -86,9 +102,6 @@ class AgenteMonitor(Agent):
     prioridade de pacientes e o Agente Monitor deve manter-se a par dessas atualizações.
     '''
     class FeedbackAlerta(CyclicBehaviour):
-        async def on_start(self):
-            print(f"{self.agent.jid}: Pronto para receber feedback do Agente Alerta.")
-
         async def run(self):
             dados = await self.receive()
             if (dados and (dados.get_metadata("performative") == "inform") and
