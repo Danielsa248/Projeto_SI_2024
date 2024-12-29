@@ -1,10 +1,12 @@
-import asyncio
-import jsonpickle
-import random as rand
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 from spade.message import Message
-from info_comum import *
+
+import asyncio
+import jsonpickle
+import random as rand
+
+from Projeto_SI_2024.info_comum import *
 
 
 class AgenteUnidade(Agent):

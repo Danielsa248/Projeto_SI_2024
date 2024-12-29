@@ -4,8 +4,8 @@ from spade.behaviour import OneShotBehaviour, CyclicBehaviour
 from spade.message import Message
 import random
 import jsonpickle
-from classes.DadosMedicos import *
-from info_comum import *
+from Projeto_SI_2024.classes.dados_medico import *
+from Projeto_SI_2024.info_comum import *
 
 
 class Medico(Agent):

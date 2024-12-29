@@ -1,11 +1,11 @@
-from agente_paciente import *
-from agente_unidade import *
-from agente_monitor import *
-from agente_alerta import *
-from agente_gestor_medicos import *
-from agente_medico import *
+from Projeto_SI_2024.agentes.agente_paciente import *
+from Projeto_SI_2024.agentes.agente_unidade import *
+from Projeto_SI_2024.agentes.agente_monitor import *
+from Projeto_SI_2024.agentes.agente_alerta import *
+from Projeto_SI_2024.agentes.agente_gestor_medicos import *
+from Projeto_SI_2024.agentes.agente_medico import *
 from info_comum import *
-import time
+
 from spade import quit_spade
 
 

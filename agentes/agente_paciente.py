@@ -5,8 +5,8 @@ from spade.message import Message
 import random
 import jsonpickle
 
-from classes.infosPaciente import *
-from info_comum import *
+from Projeto_SI_2024.classes.dados_paciente import *
+from Projeto_SI_2024.info_comum import *
 
 
 class Paciente(Agent):
@@ -31,7 +31,7 @@ class Paciente(Agent):
         async def run(self):
             msg1 = Message(to=AGENTE_UNIDADE)
             msg1.set_metadata("performative", "subscribe")
-            msg1.body = jsonpickle.encode(infosPaciente(str(self.agent.jid),self.agent.get("esp"),
+            msg1.body = jsonpickle.encode(DadosPaciente(str(self.agent.jid),self.agent.get("esp"),
                                                         None,None,None,random.randint(GRAU_MIN,GRAU_MAX + 1)))
             await self.send(msg1)
             print(f"{self.agent.jid}: Registo enviado ao Agente Unidade.")
@@ -47,7 +47,7 @@ class Paciente(Agent):
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
-                    infosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
+                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
                                   self.agent.get("bf"), self.agent.get("temp"), None))
                 await self.send(dados)
 
@@ -79,7 +79,7 @@ class Paciente(Agent):
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
-                    infosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
+                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
                                   self.agent.get("bf"), self.agent.get("temp"), None))
                 await self.send(dados)
 
@@ -88,7 +88,7 @@ class Paciente(Agent):
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
-                    infosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
+                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
                                   self.agent.get("bf"), self.agent.get("temp"), None))
                 await self.send(dados)
 

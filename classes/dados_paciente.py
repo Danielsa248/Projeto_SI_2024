@@ -1,4 +1,4 @@
-class infosPaciente:
+class DadosPaciente:
     def __init__(self,jid,especialidade,bpm,bf,temperatura,grauPrioridade):
         self.jid = jid
         self.especialidade = especialidade

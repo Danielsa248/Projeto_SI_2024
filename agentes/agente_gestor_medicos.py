@@ -1,9 +1,11 @@
-import random
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
+
 import jsonpickle
-from info_comum import *
+import random
+
+from Projeto_SI_2024.info_comum import *
 
 
 class AgenteGestorMedicos(Agent):
