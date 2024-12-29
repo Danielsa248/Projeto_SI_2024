@@ -1,3 +1,4 @@
+import asyncio
 import jsonpickle
 import random as rand
 from spade.agent import Agent
@@ -16,8 +17,9 @@ class AgenteUnidade(Agent):
         for esp in ESPECIALIDADES:
             self.salas[esp] = [{}, rand.randint(8,15)]
 
-        self.salas["Cuidados Geral"] = [{}, rand.randint(20,35)]
+        self.salas["Cuidados Gerais"] = [{}, rand.randint(20,35)]
 
+        self.lock = asyncio.Lock()
 
         a = self.registarUtenteBehav()
         b = self.updatePrioridadeBehav()
@@ -48,49 +50,49 @@ class AgenteUnidade(Agent):
             self.salas[especialidade][0].pop(id)
             self.salas[especialidade][0][paciente] = prioridade
 
-            if self.salas["Cuidados Geral"][1] > 0:
-                self.salas["Cuidados Geral"][0][id] = lowprio
-                self.salas["Cuidados Geral"][1] -= 1
+            if self.salas["Cuidados Gerais"][1] > 0:
+                self.salas["Cuidados Gerais"][0][id] = lowprio
+                self.salas["Cuidados Gerais"][1] -= 1
                 return True
 
             else:
-                # pop menor prioridade nos cuidados geral
+                # pop menor prioridade nos Cuidados Gerais
                 lowprio2 = lowprio
                 id2 = id
 
-                for key, value in self.salas["Cuidados Geral"][0].items():
+                for key, value in self.salas["Cuidados Gerais"][0].items():
 
                     if value < lowprio2:
                         lowprio2 = value
                         id2 = key
 
                 if lowprio2 < lowprio:
-                    self.salas["Cuidados Geral"][0].pop(id2)
-                    self.salas["Cuidados Geral"][0][id] = lowprio
+                    self.salas["Cuidados Gerais"][0].pop(id2)
+                    self.salas["Cuidados Gerais"][0][id] = lowprio
 
 
                 return True
 
         else:
-            if self.salas["Cuidados Geral"][1] > 0:
-                self.salas["Cuidados Geral"][0][paciente] = prioridade
-                self.salas["Cuidados Geral"][1] -= 1
+            if self.salas["Cuidados Gerais"][1] > 0:
+                self.salas["Cuidados Gerais"][0][paciente] = prioridade
+                self.salas["Cuidados Gerais"][1] -= 1
                 return True
 
             else:
-                # pop menor prioridade nos cuidados geral
+                # pop menor prioridade nos Cuidados Gerais
                 lowprio2 = prioridade
                 id2 = paciente
 
-                for key, value in self.salas["Cuidados Geral"][0].items():
+                for key, value in self.salas["Cuidados Gerais"][0].items():
 
                     if value < lowprio2:
                         lowprio2 = value
                         id2 = key
 
                 if lowprio2 < prioridade:
-                    self.salas["Cuidados Geral"][0].pop(id2)
-                    self.salas["Cuidados Geral"][0][paciente] = prioridade
+                    self.salas["Cuidados Gerais"][0].pop(id2)
+                    self.salas["Cuidados Gerais"][0][paciente] = prioridade
                     return True
 
                 else:
@@ -110,13 +112,9 @@ class AgenteUnidade(Agent):
     class registarUtenteBehav(CyclicBehaviour):
 
         async def run(self):
-
-            msg = await self.receive()
-            if msg:
-                msg_meta = msg.get_metadata("performative")
-
-                if msg_meta == "subscribe":
-
+            async with self.agent.lock:
+                msg = await self.receive()
+                if msg and (msg.get_metadata("performative") == "subscribe"):
                     utente = jsonpickle.decode(msg.body)
 
                     exists = self.agent.utenteExists(utente.get_jid())
@@ -125,10 +123,10 @@ class AgenteUnidade(Agent):
 
                         if utente.get_especialidade() not in self.agent.salas:
 
-                            if self.agent.salas["Cuidados Geral"][1] > 0:
+                            if self.agent.salas["Cuidados Gerais"][1] > 0:
 
-                                self.agent.salas["Cuidados Geral"][0][utente.get_jid()] = utente.get_grau()
-                                self.agent.salas["Cuidados Geral"][1] -= 1
+                                self.agent.salas["Cuidados Gerais"][0][utente.get_jid()] = utente.get_grau()
+                                self.agent.salas["Cuidados Gerais"][1] -= 1
                                 print(f"{self.agent.jid}: Registou {msg.sender}.")
 
                                 #mandar confirm
@@ -156,6 +154,7 @@ class AgenteUnidade(Agent):
 
                                 msg_response = msg.make_reply()
                                 msg_response.set_metadata("performative", "confirm")
+                                msg_response.set_metadata("ontology", "registado")
                                 await self.send(msg_response)
 
                             else:
@@ -168,6 +167,7 @@ class AgenteUnidade(Agent):
                                     # mandar confirm
                                     msg_response = msg.make_reply()
                                     msg_response.set_metadata("performative", "confirm")
+                                    msg_response.set_metadata("ontology", "registado")
                                     await self.send(msg_response)
 
                                 else:
@@ -188,14 +188,10 @@ class AgenteUnidade(Agent):
     class updatePrioridadeBehav(CyclicBehaviour):
 
         async def run(self):
+            async with self.agent.lock:
+                msg = await self.receive(timeout=10)
 
-            msg = await self.receive(timeout=10)
-
-            if msg:
-                msg_meta = msg.get_metadata("performative")
-
-                if msg_meta == "informative":
-
+                if msg and (msg.get_metadata("performative") == "inform"):
                     utente = jsonpickle.decode(msg.body)
 
                     especialidade = self.agent.getEspecialidade(utente.get_jid())

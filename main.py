@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 5:
+    while num_medicos < 1:
         medico = Medico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         future.result()
