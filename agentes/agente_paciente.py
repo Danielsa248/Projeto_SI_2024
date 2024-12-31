@@ -37,7 +37,7 @@ class AgentePaciente(Agent):
             msg1 = Message(to=AGENTE_UNIDADE)
             msg1.set_metadata("performative", "subscribe")
             msg1.body = jsonpickle.encode(DadosPaciente(str(self.agent.jid),self.agent.get("esp"),
-                                                        None,None,None,random.randint(GRAU_MIN + 1,GRAU_MAX + 1)))
+                                                        None,None,None,random.randint(GRAU_MIN + 1, GRAU_MAX + 1)))
             await self.send(msg1)
             print(f"{extrair_nome_agente(self.agent.jid)}: Registo enviado ao Agente Unidade.")
 
@@ -92,9 +92,8 @@ class AgentePaciente(Agent):
                 temp_min = self.agent.get("temp_min") + K * (TEMP_CIMA_IDEAL - self.agent.get("temp_min"))
                 self.set("temp_min", temp_min)
 
-                temp_min = self.agent.get("temp_min") + K * (self.agent.get("temp_min") - TEMP_BAIXO_IDEAL)
-                self.set("temp_min", temp_min)
-
+                temp_max = self.agent.get("temp_max") + K * (self.agent.get("temp_max") - TEMP_BAIXO_IDEAL)
+                self.set("temp_max", temp_max)
 
                 dados = Message(to=AGENTE_MONITOR)
                 dados.set_metadata("performative", "inform")
@@ -118,7 +117,6 @@ class AgentePaciente(Agent):
                                   random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
                                   None))
                 await self.send(dados)
-
 
 
     # Termina a execução quando o Agente Unidade confirma a saída do paciente da UCI

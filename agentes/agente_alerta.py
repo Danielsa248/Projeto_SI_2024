@@ -4,6 +4,7 @@ from spade.message import Message
 
 import asyncio
 import jsonpickle as jp
+import time
 
 from info_comum import *
 
@@ -17,10 +18,10 @@ class AgenteAlerta(Agent):
         print(f"AGENTE ALERTA: A iniciar...")
         esperar_alerta = self.EsperarAlertas()
         requisitar_tratamento = self.RequisitarTratamentos()
-        reavaliar_prioridades = self.ReavaliarPrioridades(period=10)
+        #reavaliar_prioridades = self.ReavaliarPrioridades(period=10)
         self.add_behaviour(esperar_alerta)
         self.add_behaviour(requisitar_tratamento)
-        self.add_behaviour(reavaliar_prioridades)
+        #self.add_behaviour(reavaliar_prioridades)
         self.lock = asyncio.Lock()  # Usado para prevenir "race conditions" quando
                                     # dois Behaviours acedem à mesma lista de espera
 
@@ -61,30 +62,23 @@ class AgenteAlerta(Agent):
                     for dados_paciente in self.agent.filas_de_espera[fila][:]:
                         # Envio dos dados para tentativa de tratamento
                         print(f"AGENTE ALERTA: Será enviado o pedido de tratamento de {extrair_nome_agente(dados_paciente.get_jid())}.")
-                        await asyncio.sleep(10)
+                        time.sleep(3)
                         self.agent.filas_de_espera[fila].remove(dados_paciente)
                         requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
                         requisicao.set_metadata("performative", "request")
                         requisicao.body = jp.encode(dados_paciente)
                         await self.send(requisicao)
-                        # print(f"AGENTE ALERTA: Enviado o pedido de tratamento de {dados_paciente.get_jid()}.")
-
 
                         # Processamento da resposta do Agente Gestor de Médicos
                         resposta = await self.receive(timeout=5)
                         if resposta and (resposta.get_metadata("performative") == "refuse"):
                             print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(dados_paciente.get_jid())} irá regressar à fila de espera.")
-                            await asyncio.sleep(10)
+                            time.sleep(3)
                             nova_posicao = len(self.agent.filas_de_espera[fila]) // 2
-                            #self.agent.filas_de_espera[fila].remove(dados_paciente)
                             self.agent.filas_de_espera[fila].insert(nova_posicao, dados_paciente) # "Puxa" o paciente de volta para o meio da fila
-                            #print(f"AGENTE ALERTA: O pedido de tratamento de {dados_paciente.get_jid()} regressou à fila de espera.")
                         elif resposta and (resposta.get_metadata("performative") == "confirm"):
-                            print(
-                                f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(dados_paciente.get_jid())} será cumprido.")
-                            await asyncio.sleep(10)
-                            #self.agent.filas_de_espera[fila].remove(dados_paciente)
-                            #print(f"AGENTE ALERTA: O pedido de tratamento de {dados_paciente.get_jid()} foi cumprido.")
+                            print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(dados_paciente.get_jid())} será cumprido.")
+                            time.sleep(3)
                             serviu_requisicao = True
                             break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
 
@@ -107,6 +101,7 @@ class AgenteAlerta(Agent):
                     for dados_paciente in self.agent.filas_de_espera[i][:]:
                         self.agent.filas_de_espera[i + 1].append(dados_paciente)
                         self.agent.filas_de_espera[i].remove(dados_paciente)
+                        dados_paciente.set_grau(dados_paciente.get_grau() + 1)
                         print(f"AGENTE ALERTA: Subiu o grau de prioridade de {extrair_nome_agente(dados_paciente.get_jid())}.")
 
                         # Sincronização com o Agente Monitor

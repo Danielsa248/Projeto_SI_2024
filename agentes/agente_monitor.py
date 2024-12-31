@@ -86,50 +86,36 @@ class AgenteMonitor(Agent):
                 print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} têm gravidade de grau {grau}.")
                 dados_paciente.set_grau(grau)
 
-                if paciente_jid in self.agent.pacientes:
+                if paciente_jid in self.agent.pacientes.keys():
                     self.agent.pacientes[paciente_jid].set_grau(grau)
-                    status_atual = self.agent.pacientes[paciente_jid]
-                    if (grau <= GRAU_MIN) or (status_atual.get_contador() >= LIMITE_CONTADOR):
-                        print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
-                        self.agent.pacientes.pop(paciente_jid)
-                        resposta_paciente = Message(to=paciente_jid)
-                        resposta_paciente.set_metadata("performative", "refuse")
-                        resposta_paciente.set_metadata("ontology", "stop_dados")
-                        await self.send(resposta_paciente)
-
-                    elif grau >= LIMITE_ALERTA:
-                        print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
-                        alerta = Message(to=AGENTE_ALERTA)
-                        alerta.set_metadata("performative", "inform")
-                        alerta.body = jp.encode(dados_paciente)
-                        self.agent.pacientes[paciente_jid].set_contador(0)
-                        await self.send(alerta)
-
-                    elif status_atual.get_contador() < LIMITE_CONTADOR:
-                        print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} continuará a ser monitorizado.")
-                        resposta_paciente = Message(to=paciente_jid)
-                        resposta_paciente.set_metadata("performative", "refuse")
-                        resposta_paciente.set_metadata("ontology", "novos_dados")
-                        self.agent.pacientes[paciente_jid].set_contador(
-                            self.agent.pacientes[paciente_jid].get_contador() + 1)
-                        await self.send(resposta_paciente)
+                    self.agent.pacientes[paciente_jid].set_contador(self.agent.pacientes[paciente_jid].get_contador() + 1)
 
                 else:
-                    self.agent.pacientes[paciente_jid] = StatusPaciente(paciente_jid, grau, 0)
-                    if (grau <= GRAU_MIN):
-                        print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
-                        self.agent.pacientes.pop(paciente_jid)
-                        resposta_paciente = Message(to=paciente_jid)
-                        resposta_paciente.set_metadata("performative", "refuse")
-                        resposta_paciente.set_metadata("ontology", "stop_dados")
-                        await self.send(resposta_paciente)
+                    self.agent.pacientes[paciente_jid] = StatusPaciente(paciente_jid, grau, 1)
 
-                    elif grau >= LIMITE_ALERTA:
-                        print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
-                        alerta = Message(to=AGENTE_ALERTA)
-                        alerta.set_metadata("performative", "inform")
-                        alerta.body = jp.encode(dados_paciente)
-                        await self.send(alerta)
+                status_atual = self.agent.pacientes[paciente_jid]
+                if (grau <= GRAU_MIN) or (status_atual.get_contador() >= LIMITE_CONTADOR):
+                    print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
+                    self.agent.pacientes.pop(paciente_jid)
+                    resposta_paciente = Message(to=paciente_jid)
+                    resposta_paciente.set_metadata("performative", "refuse")
+                    resposta_paciente.set_metadata("ontology", "stop_dados")
+                    await self.send(resposta_paciente)
+
+                elif grau >= LIMITE_ALERTA:
+                    print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
+                    alerta = Message(to=AGENTE_ALERTA)
+                    alerta.set_metadata("performative", "inform")
+                    alerta.body = jp.encode(dados_paciente)
+                    self.agent.pacientes[paciente_jid].set_contador(1)
+                    await self.send(alerta)
+
+                else:
+                    print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} continuará a ser monitorizado.")
+                    resposta_paciente = Message(to=paciente_jid)
+                    resposta_paciente.set_metadata("performative", "refuse")
+                    resposta_paciente.set_metadata("ontology", "novos_dados")
+                    await self.send(resposta_paciente)
 
                 # Sincronização com o Agente Unidade
                 atualizacao = Message(to=AGENTE_UNIDADE)
