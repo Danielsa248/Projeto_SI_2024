@@ -1,3 +1,5 @@
+import time
+
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
@@ -13,9 +15,12 @@ class AgentePaciente(Agent):
 
     async def setup(self):
         print(f"{extrair_nome_agente(self.jid)}: A iniciar...")
-        self.set("bpm", random.randint(BPM_BAIXO_INICIAL,BPM_CIMA_INICIAL))
-        self.set("bf", random.randint(BF_BAIXO_INICIAL,BF_CIMA_INICIAL))
-        self.set("temp", random.randint(TEMP_BAIXO_INICIAL,TEMP_CIMA_INICIAL))
+        self.set("bpm_max", random.randint((BPM_BAIXO_INICIAL + BPM_CIMA_INICIAL) / 2, BPM_CIMA_INICIAL + 1))
+        self.set("bpm_min", random.randint(BPM_BAIXO_INICIAL, (BPM_CIMA_INICIAL + BPM_BAIXO_INICIAL) / 2))
+        self.set("bf_max", random.randint((BF_BAIXO_INICIAL + BF_CIMA_INICIAL) / 2, BF_CIMA_INICIAL + 1))
+        self.set("bf_min", random.randint(BF_BAIXO_INICIAL, (BF_CIMA_INICIAL + BF_BAIXO_INICIAL) / 2))
+        self.set("temp_max", random.uniform((TEMP_BAIXO_INICIAL + TEMP_CIMA_INICIAL) / 2, TEMP_CIMA_INICIAL + 1))
+        self.set("temp_min", random.uniform(TEMP_BAIXO_INICIAL, (TEMP_CIMA_INICIAL + TEMP_BAIXO_INICIAL) / 2))
         self.set("esp", random.choice(ESPECIALIDADES))
 
         self.registar_unidade = self.RegistarNaUnidade()
@@ -32,7 +37,7 @@ class AgentePaciente(Agent):
             msg1 = Message(to=AGENTE_UNIDADE)
             msg1.set_metadata("performative", "subscribe")
             msg1.body = jsonpickle.encode(DadosPaciente(str(self.agent.jid),self.agent.get("esp"),
-                                                        None,None,None,random.randint(GRAU_MIN,GRAU_MAX + 1)))
+                                                        None,None,None,random.randint(GRAU_MIN + 1,GRAU_MAX + 1)))
             await self.send(msg1)
             print(f"{extrair_nome_agente(self.agent.jid)}: Registo enviado ao Agente Unidade.")
 
@@ -47,8 +52,11 @@ class AgentePaciente(Agent):
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
-                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
-                                  self.agent.get("bf"), self.agent.get("temp"), None))
+                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"),
+                                  random.randint(self.agent.get("bpm_min"), self.agent.get("bpm_max") + 1),
+                                  random.randint(self.agent.get("bf_min"), self.agent.get("bf_max") + 1),
+                                  random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
+                                  None))
                 await self.send(dados)
 
 
@@ -67,24 +75,36 @@ class AgentePaciente(Agent):
 
             if msg and (((msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"))\
                     or ((msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"))):
-                bpm_min = BPM_BAIXO_INICIAL + (0.1 * (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL))
-                bpm_max = BPM_CIMA_INICIAL - (0.2 * (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL))
-                self.set("bpm", random.randint(bpm_min, bpm_max))
 
-                bf_min = BF_BAIXO_INICIAL + 1
-                bf_max = BF_CIMA_INICIAL - 1
-                temp_min = TEMP_BAIXO_INICIAL + 1
-                temp_max = TEMP_CIMA_INICIAL - 1
-                self.set("temp", random.randint(temp_min, temp_max))
 
-                self.set("bf", random.randint(bf_min, bf_max))
+                bpm_min = self.agent.get("bpm_min") + K * (BPM_CIMA_IDEAL - self.agent.get("bpm_min"))
+                self.set("bpm_min", bpm_min)
+
+                bpm_max = self.agent.get("bpm_max") - K * (self.agent.get("bpm_max") - BPM_BAIXO_IDEAL)
+                self.set("bpm_max", bpm_max)
+
+                bf_min = self.agent.get("bf_min") + K * (BF_CIMA_IDEAL - self.agent.get("bf_min"))
+                self.set("bf_min", bf_min)
+
+                bf_max = self.agent.get("bf_max") - K * (self.agent.get("bf_max") - BF_BAIXO_IDEAL)
+                self.set("bf_max", bf_max)
+
+                temp_min = self.agent.get("temp_min") + K * (TEMP_CIMA_IDEAL - self.agent.get("temp_min"))
+                self.set("temp_min", temp_min)
+
+                temp_min = self.agent.get("temp_min") + K * (self.agent.get("temp_min") - TEMP_BAIXO_IDEAL)
+                self.set("temp_min", temp_min)
+
 
                 dados = Message(to=AGENTE_MONITOR)
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
-                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
-                                  self.agent.get("bf"), self.agent.get("temp"), None))
+                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"),
+                                  random.uniform(self.agent.get("bpm_min"), self.agent.get("bpm_max") + 1),
+                                  random.uniform(self.agent.get("bf_min"), self.agent.get("bf_max") + 1),
+                                  random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
+                                  None))
                 await self.send(dados)
 
             elif msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"):
@@ -92,8 +112,11 @@ class AgentePaciente(Agent):
                 dados.set_metadata("performative", "inform")
                 dados.set_metadata("ontology", "dados_paciente")
                 dados.body = jsonpickle.encode(
-                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"), self.agent.get("bpm"),
-                                  self.agent.get("bf"), self.agent.get("temp"), None))
+                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"),
+                                  random.randint(self.agent.get("bpm_min"), self.agent.get("bpm_max") + 1),
+                                  random.randint(self.agent.get("bf_min"), self.agent.get("bf_max") + 1),
+                                  random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
+                                  None))
                 await self.send(dados)
 
 

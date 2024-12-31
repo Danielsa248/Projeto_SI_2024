@@ -113,11 +113,11 @@ class AgenteGestorMedicos(Agent):
         async def run(self):
             if self.agent.turno_atual == TURNOS[-1]:
                 self.agent.turno_atual = TURNOS[0]
-                print(f"AGENTE GESTOR MEDICOS: O turno atual --> {self.agent.turno_atual.upper()}")
+                print(f"AGENTE GESTOR MEDICOS: Turno atual --> {self.agent.turno_atual.upper()}")
 
             else:
                 self.agent.turno_atual = TURNOS[TURNOS.index(self.agent.turno_atual) + 1]
-                print(f"AGENTE GESTOR MEDICOS: O turno atual --> {self.agent.turno_atual.upper()}")
+                print(f"AGENTE GESTOR MEDICOS: Turno atual --> {self.agent.turno_atual.upper()}")
 
             for especialidade in self.agent.medicos.keys():
                 for med in self.agent.medicos[especialidade]:

@@ -16,17 +16,20 @@ AGENTE_GESTOR_MEDICOS = f"GestorMedicos@{XMPP_SERVER}"
 GRAU_MIN = 0
 GRAU_MAX = 9
 LIMITE_ALERTA = 5
+LIMITE_CONTADOR = 5
 ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
     "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
 ]
-TURNOS = ["turno1", "turno2", "turno3"]
+TURNOS = ["turno1", "turno2"]#, "turno3"]
 
 # Valores de referência
 BPM_BAIXO_IDEAL = 60
 BPM_CIMA_IDEAL = 100
-TEMP_IDEAL = 37
-BF_IDEAL = 20
+TEMP_BAIXO_IDEAL = 36.1
+TEMP_CIMA_IDEAL = 37.2
+BF_BAIXO_IDEAL = 12
+BF_CIMA_IDEAL = 25
 
 # Limites iniciais para gerar valores
 BPM_BAIXO_INICIAL = 40
@@ -35,6 +38,9 @@ BF_BAIXO_INICIAL = 6
 BF_CIMA_INICIAL = 34
 TEMP_BAIXO_INICIAL = 30
 TEMP_CIMA_INICIAL = 44
+
+# Fator incrementação
+K = 0.5
 
 # Funções Globais
 def extrair_nome_agente(agente_jid):
