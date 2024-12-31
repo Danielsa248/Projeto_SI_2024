@@ -20,3 +20,6 @@ class StatusPaciente:
 
     def set_contador(self, contador):
         self.contador = contador
+
+    def __str__(self):
+        return f"({self.jid}, {self.grau}, {self.contador})"

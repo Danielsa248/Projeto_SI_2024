@@ -94,7 +94,7 @@ class AgenteAlerta(Agent):
     diferentes prioridades. Para além disso, comunica as alterações nos graus de
     prioridade ao Agente Monitor e Agente Unidade, para efeitos de sincronização.
     '''
-    class ReavaliarPrioridades(PeriodicBehaviour):
+    '''class ReavaliarPrioridades(PeriodicBehaviour):
         async def run(self):
             async with self.agent.lock:
                 for i in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
@@ -115,4 +115,4 @@ class AgenteAlerta(Agent):
                         msg_unidade = Message(to=AGENTE_UNIDADE)
                         msg_unidade.set_metadata("performative", "inform")
                         msg_unidade.body = jp.encode(dados_paciente)
-                        await self.send(msg_unidade)
+                        await self.send(msg_unidade)'''

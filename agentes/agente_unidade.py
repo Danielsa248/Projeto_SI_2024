@@ -30,14 +30,12 @@ class AgenteUnidade(Agent):
 
 
     def utenteExists(self, jid):
-
         for values in self.salas.values():
             if jid in values[0]:
                 return True
 
 
     def reorganizeUtentes(self, especialidade, prioridade, paciente):
-
         lowprio = prioridade
         id = paciente
 
@@ -102,7 +100,6 @@ class AgenteUnidade(Agent):
 
 
     def getEspecialidade(self, jid):
-
         for key, values in self.salas.items():
 
             if jid in values[0]:
@@ -112,7 +109,6 @@ class AgenteUnidade(Agent):
 
 
     class RegistarUtenteBehav(CyclicBehaviour):
-
         async def run(self):
             async with self.agent.lock:
                 msg = await self.receive()
@@ -188,7 +184,6 @@ class AgenteUnidade(Agent):
 
 
     class UpdatePrioridadeBehav(CyclicBehaviour):
-
         async def run(self):
             async with self.agent.lock:
                 msg = await self.receive(timeout=10)

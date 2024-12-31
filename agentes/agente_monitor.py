@@ -100,7 +100,9 @@ class AgenteMonitor(Agent):
                     resposta_paciente = Message(to=paciente_jid)
                     resposta_paciente.set_metadata("performative", "refuse")
                     resposta_paciente.set_metadata("ontology", "stop_dados")
+                    print(resposta_paciente)
                     await self.send(resposta_paciente)
+                    print("ENVIEI A LICENÇA PRA MATAR O GAJO")
 
                 elif grau >= LIMITE_ALERTA:
                     print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
