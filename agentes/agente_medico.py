@@ -1,4 +1,4 @@
-import time
+import asyncio
 from spade.agent import Agent
 from spade.behaviour import OneShotBehaviour, CyclicBehaviour
 from spade.message import Message
@@ -8,15 +8,15 @@ from classes.dados_medico import *
 from info_comum import *
 
 
-class Medico(Agent):
+class AgenteMedico(Agent):
     async def setup(self):
-        print(f"{self.jid}: A iniciar...")
+        print(f"{extrair_nome_agente(self.jid)}: A iniciar...")
         # Gera a sua especialidade e um turno aleatoriamente
         self.set("esp", random.choice(ESPECIALIDADES))
         self.set("turno", random.choice(TURNOS))
-        behave1 = self.MedicoRegista()
+        self.behave1 = self.MedicoRegista()
         behave2 = self.TrataPaciente()
-        self.add_behaviour(behave1)
+        self.add_behaviour(self.behave1)
         self.add_behaviour(behave2)
 
 
@@ -25,18 +25,21 @@ class Medico(Agent):
     class MedicoRegista(OneShotBehaviour):
         async def run(self):
             #Manda msg ao Gestor de Medicos
-            dm = DadosMedicos(self.agent.jid, self.agent.get("esp"), self.agent.get("turno"))
+            dm = DadosMedicos(str(self.agent.jid), self.agent.get("esp"), self.agent.get("turno"))
             msg = Message(to=AGENTE_GESTOR_MEDICOS)
             msg.body = jsonpickle.encode(dm)
             msg.set_metadata("performative", "subscribe")
 
             await self.send(msg)
-            print(f"{self.agent.jid}: Registo enviado ao Gestor")
+            print(f"{extrair_nome_agente(self.agent.jid)}: Registo enviado ao Gestor")
 
 
     '''Comportamento onde o Médico trata o Paciente'''
 
     class TrataPaciente(CyclicBehaviour):
+        async def on_start(self):
+            await self.agent.behave1.join()
+
         async def run(self):
             ordem = await self.receive(timeout=5)
 
@@ -50,9 +53,9 @@ class Medico(Agent):
                     trat.set_metadata("performative", "confirm")
                     trat.set_metadata("ontology", "tratado")
 
-                    time.sleep(random.randint(2,10))
+                    await asyncio.sleep(random.randint(2,10))
                     await self.send(trat)
-                    print(f"{self.agent.jid}: Paciente {paciente} tratado com sucesso")
+                    print(f"{extrair_nome_agente(self.agent.jid)}: {extrair_nome_agente(paciente)} tratado com sucesso")
 
                     # Sinaliza o fim do tratamento ao Gestor de Medicos
                     msg = Message(to=AGENTE_GESTOR_MEDICOS)

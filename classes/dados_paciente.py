@@ -1,3 +1,5 @@
+#Classe para a comunicação de dados médicos de um paciente
+
 class DadosPaciente:
     def __init__(self,jid,especialidade,bpm,bf,temperatura,grauPrioridade):
         self.jid = jid

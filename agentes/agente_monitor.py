@@ -13,7 +13,7 @@ class AgenteMonitor(Agent):
     pacientes = dict()
 
     async def setup(self):
-        print(f"{self.jid}: A iniciar...")
+        print(f"AGENTE MONITOR: A iniciar...")
         monitorizar_pacientes = self.MonitorizarPacientes()
         feedback_alerta = self.FeedbackAlerta()
         self.add_behaviour(monitorizar_pacientes)
@@ -29,16 +29,16 @@ class AgenteMonitor(Agent):
         temp = dados_paciente.get_temp()
         bf = dados_paciente.get_bf()
 
-        grau_temp = (GRAU_MAX - abs(temp - TEMP_IDEAL)) / ((TEMP_CIMA_INICIAL - TEMP_IDEAL) * (GRAU_MAX - GRAU_MIN))
-        grau_bf =  (GRAU_MAX - abs(bf- BF_IDEAL)) / ((BF_CIMA_INICIAL - BF_IDEAL) * (GRAU_MAX - GRAU_MIN))
+        grau_temp = GRAU_MAX - abs(temp - TEMP_IDEAL) / (TEMP_CIMA_INICIAL - TEMP_IDEAL) * (GRAU_MAX - GRAU_MIN)
+        grau_bf =  GRAU_MAX - abs(bf- BF_IDEAL) / (BF_CIMA_INICIAL - BF_IDEAL) * (GRAU_MAX - GRAU_MIN)
         grau_bpm = GRAU_MAX // 2
 
         if BPM_BAIXO_IDEAL <= bpm <= BPM_CIMA_IDEAL:
             grau_bpm = GRAU_MIN
         elif bpm < BPM_BAIXO_IDEAL:
-            grau_bpm = (GRAU_MAX - (bpm - BPM_BAIXO_INICIAL)) / ((BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL) * (GRAU_MAX - GRAU_MIN))
+            grau_bpm = GRAU_MAX - (bpm - BPM_BAIXO_INICIAL) / (BPM_BAIXO_IDEAL - BPM_BAIXO_INICIAL) * (GRAU_MAX - GRAU_MIN)
         else:
-            grau_bpm = (GRAU_MAX - (BPM_CIMA_INICIAL - bpm)) / ((BPM_CIMA_INICIAL - BPM_CIMA_IDEAL) * (GRAU_MAX - GRAU_MIN))
+            grau_bpm = GRAU_MAX - (BPM_CIMA_INICIAL - bpm) / (BPM_CIMA_INICIAL - BPM_CIMA_IDEAL) * (GRAU_MAX - GRAU_MIN)
 
         return round((grau_temp + grau_bf + grau_bpm) / 3)
 
@@ -60,13 +60,13 @@ class AgenteMonitor(Agent):
                 dados_paciente = jp.decode(dados.body)
                 paciente_jid = dados_paciente.get_jid()
                 grau = self.agent.determinar_grau(dados_paciente)
-                print(f"{self.agent.jid}: Os dados de {paciente_jid} têm gravidade de grau {grau}.")
+                print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} têm gravidade de grau {grau}.")
                 dados_paciente.set_grau(grau)
                 self.agent.pacientes[paciente_jid] = grau
 
                 # O paciente pode parar de enviar dados médicos
                 if grau <= GRAU_MIN:
-                    print(f"{self.agent.jid}: O paciente {paciente_jid} vai deixar de ser monitorizado.")
+                    print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
                     self.agent.pacientes.pop(paciente_jid, None)
                     resposta_paciente = Message(to=paciente_jid)
                     resposta_paciente.set_metadata("performative", "refuse")
@@ -74,14 +74,14 @@ class AgenteMonitor(Agent):
                     await self.send(resposta_paciente)
                 # Os dados serão reencaminhados para o Agente Alerta
                 elif grau >= LIMITE_ALERTA:
-                    print(f"{self.agent.jid}: Os dados de {paciente_jid} serão reencaminhados para o Agente Alerta.")
+                    print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
                     alerta = Message(to=AGENTE_ALERTA)
                     alerta.set_metadata("performative", "inform")
                     alerta.body = jp.encode(dados_paciente)
                     await self.send(alerta)
                 # O paciente deve continuar a enviar dados médicos
                 else:
-                    print(f"{self.agent.jid}: O paciente {paciente_jid} continuará a ser monitorizado.")
+                    print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} continuará a ser monitorizado.")
                     resposta_paciente = Message(to=paciente_jid)
                     resposta_paciente.set_metadata("performative", "refuse")
                     resposta_paciente.set_metadata("ontology", "novos_dados")

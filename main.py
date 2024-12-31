@@ -28,8 +28,8 @@ if __name__ == "__main__":
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 50:
-        medico = Medico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
+    while num_medicos < 15:
+        medico = AgenteMedico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         future.result()
         medicos.append(medico)
@@ -38,8 +38,8 @@ if __name__ == "__main__":
     pacientes = []
     futures = []
     num_pacientes = 0
-    while num_pacientes < 3:
-        paciente = Paciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
+    while num_pacientes < 10:
+        paciente = AgentePaciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
         future = paciente.start(auto_register=True)
         futures.append(future)
         pacientes.append(paciente)

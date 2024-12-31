@@ -12,7 +12,7 @@ class AgenteGestorMedicos(Agent):
     turno_atual = TURNOS[0]
 
     async def setup(self):
-        print(f"{self.jid}: A iniciar...")
+        print(f"AGENTE GESTOR MEDICOS: A iniciar...")
         behave1 = self.RegistaMedico()
         behave2 = self.OrdemMedico()
         behave3 = self.FimTratamento()
@@ -78,10 +78,10 @@ class AgenteGestorMedicos(Agent):
                         ordem.set_metadata("performative", "inform")
                         ordem.body = paciente
                         await self.send(ordem)
-                        print(f"{self.agent.jid}: Médico {medico} requisitado para o Paciente {paciente}")
+                        print(f"AGENTE GESTOR MEDICOS: {extrair_nome_agente(medico)} requisitado para o {extrair_nome_agente(paciente)}")
 
                     else:
-                        print(f"{self.agent.jid}: Nenhum Médico está disponível para o Paciente {paciente}")
+                        print(f"AGENTE GESTOR MEDICOS: Nenhum Médico está disponível para o {extrair_nome_agente(paciente)}")
                         msg_alerta.set_metadata("performative", "refuse")
                         await self.send(msg_alerta)
 
@@ -103,7 +103,7 @@ class AgenteGestorMedicos(Agent):
                         if med[0] == medico:
                             if med[1] == self.agent.turno_atual :
                                 med[2] = True
-                                print(f"{self.agent.jid}: Médico {medico} novamente disponível")
+                                print(f"AGENTE GESTOR MEDICOS: {extrair_nome_agente(medico)} novamente disponível")
                                 break
 
 
@@ -113,9 +113,11 @@ class AgenteGestorMedicos(Agent):
         async def run(self):
             if self.agent.turno_atual == TURNOS[-1]:
                 self.agent.turno_atual = TURNOS[0]
+                print(f"AGENTE GESTOR MEDICOS: O turno atual --> {self.agent.turno_atual.upper()}")
 
             else:
                 self.agent.turno_atual = TURNOS[TURNOS.index(self.agent.turno_atual) + 1]
+                print(f"AGENTE GESTOR MEDICOS: O turno atual --> {self.agent.turno_atual.upper()}")
 
             for especialidade in self.agent.medicos.keys():
                 for med in self.agent.medicos[especialidade]:

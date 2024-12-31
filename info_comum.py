@@ -35,3 +35,7 @@ BF_BAIXO_INICIAL = 6
 BF_CIMA_INICIAL = 34
 TEMP_BAIXO_INICIAL = 30
 TEMP_CIMA_INICIAL = 44
+
+# Funções Globais
+def extrair_nome_agente(agente_jid):
+    return str(agente_jid).split("@")[0].upper()

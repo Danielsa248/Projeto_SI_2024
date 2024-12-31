@@ -14,7 +14,7 @@ class AgenteUnidade(Agent):
     salas = {}
 
     async def setup(self):
-        print(f"{self.jid}: A iniciar...")
+        print(f"AGENTE UNIDADE: A iniciar...")
 
         for esp in ESPECIALIDADES:
             self.salas[esp] = [{}, rand.randint(8,15)]
@@ -23,8 +23,8 @@ class AgenteUnidade(Agent):
 
         self.lock = asyncio.Lock()
 
-        a = self.registarUtenteBehav()
-        b = self.updatePrioridadeBehav()
+        a = self.RegistarUtenteBehav()
+        b = self.UpdatePrioridadeBehav()
         self.add_behaviour(a)
         self.add_behaviour(b)
 
@@ -111,7 +111,7 @@ class AgenteUnidade(Agent):
         return None
 
 
-    class registarUtenteBehav(CyclicBehaviour):
+    class RegistarUtenteBehav(CyclicBehaviour):
 
         async def run(self):
             async with self.agent.lock:
@@ -129,7 +129,7 @@ class AgenteUnidade(Agent):
 
                                 self.agent.salas["Cuidados Gerais"][0][utente.get_jid()] = utente.get_grau()
                                 self.agent.salas["Cuidados Gerais"][1] -= 1
-                                print(f"{self.agent.jid}: Registou {msg.sender}.")
+                                print(f"AGENTE UNIDADE: Registou {extrair_nome_agente(msg.sender)}.")
 
                                 #mandar confirm
                                 msg_response = msg.make_reply()
@@ -139,7 +139,7 @@ class AgenteUnidade(Agent):
 
                             else:
                                 #mudar e tirar o menor prioridade?
-                                print(f"{self.agent.jid}: Não conseguiu registar {msg.sender} devido à falta de camas.")
+                                print(f"AGENTE UNIDADE: Não conseguiu registar {extrair_nome_agente(msg.sender)} devido à falta de camas.")
 
 
                                 #mandar refuse
@@ -152,7 +152,7 @@ class AgenteUnidade(Agent):
 
                                 self.agent.salas[utente.get_especialidade()][0][utente.get_jid()] = utente.get_grau()
                                 self.agent.salas[utente.get_especialidade()][1] -= 1
-                                print(f"{self.agent.jid}: Registou {msg.sender}.")
+                                print(f"AGENTE UNIDADE: Registou {extrair_nome_agente(msg.sender)}.")
 
                                 msg_response = msg.make_reply()
                                 msg_response.set_metadata("performative", "confirm")
@@ -164,7 +164,7 @@ class AgenteUnidade(Agent):
                                 success = self.agent.reorganizeUtentes(utente.get_especialidade(), utente.get_grau(), utente.get_jid())
 
                                 if success:
-                                    print(f"{self.agent.jid}: Registou {msg.sender}.")
+                                    print(f"AGENTE UNIDADE: Registou {extrair_nome_agente(msg.sender)}.")
 
                                     # mandar confirm
                                     msg_response = msg.make_reply()
@@ -173,7 +173,7 @@ class AgenteUnidade(Agent):
                                     await self.send(msg_response)
 
                                 else:
-                                    print(f"{self.agent.jid}: Não conseguiu registar {msg.sender} devido à falta de camas.")
+                                    print(f"AGENTE UNIDADE: Não conseguiu registar {extrair_nome_agente(msg.sender)} devido à falta de camas.")
 
                                     msg_response = msg.make_reply()
                                     msg_response.set_metadata("performative", "refuse")
@@ -187,7 +187,7 @@ class AgenteUnidade(Agent):
 
 
 
-    class updatePrioridadeBehav(CyclicBehaviour):
+    class UpdatePrioridadeBehav(CyclicBehaviour):
 
         async def run(self):
             async with self.agent.lock:
@@ -208,4 +208,4 @@ class AgenteUnidade(Agent):
                             self.agent.salas[especialidade][1] += 1
                             responde = Message(to=utente.get_jid())
                             responde.set_metadata("performative", "unsubscribe")
-                            await self.send(msg)
+                            await self.send(responde)
