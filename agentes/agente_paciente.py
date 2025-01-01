@@ -1,14 +1,17 @@
-import time
-
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 
 import random
 import jsonpickle
+import time
 
-from classes.dados_paciente import *
-from info_comum import *
+try:
+    from info_comum import *
+    from classes.dados_paciente import *
+except ImportError:
+    from Projeto_SI_2024.info_comum import *
+    from Projeto_SI_2024.classes.dados_paciente import *
 
 
 class AgentePaciente(Agent):

@@ -1,11 +1,17 @@
-import asyncio
 from spade.agent import Agent
 from spade.behaviour import OneShotBehaviour, CyclicBehaviour
 from spade.message import Message
+
 import random
 import jsonpickle
-from classes.dados_medico import *
-from info_comum import *
+import asyncio
+
+try:
+    from info_comum import *
+    from classes.dados_medico import *
+except ImportError:
+    from Projeto_SI_2024.info_comum import *
+    from Projeto_SI_2024.classes.dados_medico import *
 
 
 class AgenteMedico(Agent):

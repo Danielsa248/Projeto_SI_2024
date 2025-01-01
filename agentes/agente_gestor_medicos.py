@@ -4,7 +4,10 @@ from spade.message import Message
 
 import jsonpickle
 
-from info_comum import *
+try:
+    from info_comum import *
+except ImportError:
+    from Projeto_SI_2024.info_comum import *
 
 
 class AgenteGestorMedicos(Agent):

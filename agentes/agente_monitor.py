@@ -4,8 +4,12 @@ from spade.message import Message
 
 import jsonpickle as jp
 
-from classes.status_paciente import StatusPaciente
-from info_comum import *
+try:
+    from info_comum import *
+    from classes.status_paciente import *
+except ImportError:
+    from Projeto_SI_2024.info_comum import *
+    from Projeto_SI_2024.classes.status_paciente import *
 
 
 # Classe representativa do Agente Monitor
