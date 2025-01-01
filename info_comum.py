@@ -3,7 +3,7 @@
 
 # Servidor
 SERVERS = ["192.168.35.1", "desktop-j59unhi"]
-XMPP_SERVER = SERVERS[1] # Placeholder para o endereço do servidor XMPP
+XMPP_SERVER = SERVERS[0] # Placeholder para o endereço do servidor XMPP
 PASSWORD = "NOPASSWORD"
 
 # JIDs
@@ -21,9 +21,9 @@ ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
     "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
 ]
-TURNOS = ["turno1", "turno2"]#, "turno3"]
+TURNOS = ["turno1", "turno2"]
 
-# Valores de referência
+# Valores de referência ideais
 BPM_BAIXO_IDEAL = 60
 BPM_CIMA_IDEAL = 100
 TEMP_BAIXO_IDEAL = 36.1
@@ -39,9 +39,9 @@ BF_CIMA_INICIAL = 34
 TEMP_BAIXO_INICIAL = 30
 TEMP_CIMA_INICIAL = 44
 
-# Fator incrementação
+# Fator de incrementação
 K = 0.5
 
-# Funções Globais
+# Funções globais
 def extrair_nome_agente(agente_jid):
     return str(agente_jid).split("@")[0].upper()

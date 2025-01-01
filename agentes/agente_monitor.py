@@ -14,7 +14,7 @@ except ImportError:
 
 # Classe representativa do Agente Monitor
 class AgenteMonitor(Agent):
-    # Mapa para monitorização do estado dos pacientes {jid : status_paciente}
+    # Mapa para monitorização do estado dos pacientes {jid : StatusPaciente}
     pacientes = dict()
 
     async def setup(self):
@@ -76,7 +76,8 @@ class AgenteMonitor(Agent):
     
     NOTA: Este comportamento é também responsável pelo envio de atualizações ao
     Agente Unidade e descarta pacientes quando o grau de prioridade determinado
-    é igual ou menor ao valor mínimo definido para esse parâmetro (GRAU_MIN).
+    é igual ou menor ao valor mínimo definido para esse parâmetro (GRAU_MIN) ou
+    quando recebe dados não-graves N vezes seguidas (N = LIMITE_CONTADOR).
     '''
     class MonitorizarPacientes(CyclicBehaviour):
         async def run(self):
@@ -98,15 +99,15 @@ class AgenteMonitor(Agent):
                     self.agent.pacientes[paciente_jid] = StatusPaciente(paciente_jid, grau, 1)
 
                 status_atual = self.agent.pacientes[paciente_jid]
+                # Processamento da resposta com base no estado do paciente
                 if (grau <= GRAU_MIN) or (status_atual.get_contador() >= LIMITE_CONTADOR):
                     print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
                     self.agent.pacientes.pop(paciente_jid)
+                    dados_paciente.set_grau(0) # NOTA: O grau é posto a 0 para a comunicação com o Agente Unidade
                     resposta_paciente = Message(to=paciente_jid)
                     resposta_paciente.set_metadata("performative", "refuse")
                     resposta_paciente.set_metadata("ontology", "stop_dados")
-                    print(resposta_paciente)
                     await self.send(resposta_paciente)
-                    print("ENVIEI A LICENÇA PRA MATAR O GAJO")
 
                 elif grau >= LIMITE_ALERTA:
                     print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")

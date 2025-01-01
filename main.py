@@ -6,8 +6,6 @@ from agentes.agente_gestor_medicos import *
 from agentes.agente_medico import *
 from info_comum import *
 
-from spade import quit_spade
-
 
 if __name__ == "__main__":
     unidade = AgenteUnidade(AGENTE_UNIDADE, PASSWORD)
@@ -69,5 +67,3 @@ if __name__ == "__main__":
             alerta.stop()
             gestor_medicos.stop()
             break
-
-    quit_spade()

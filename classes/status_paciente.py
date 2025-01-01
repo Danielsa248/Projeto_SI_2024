@@ -1,4 +1,4 @@
-# Classe representativa do status de um Paciente para o agente Monitor
+# Classe representativa do status de um Paciente para o Agente Monitor
 
 class StatusPaciente:
     def __init__(self, jid, grau, contador):
@@ -14,6 +14,9 @@ class StatusPaciente:
 
     def get_contador(self):
         return self.contador
+
+    def set_jid(self, jid):
+        self.jid = jid
 
     def set_grau(self, grau):
         self.grau = grau

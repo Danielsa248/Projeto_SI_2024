@@ -4,7 +4,6 @@ from spade.message import Message
 
 import random
 import jsonpickle
-import time
 
 try:
     from info_comum import *
@@ -34,14 +33,28 @@ class AgentePaciente(Agent):
         self.add_behaviour(libertar_cama)
 
 
+    # Função para geração de dados médicos
+    def mensagem_dados(self):
+        dados = Message(to=AGENTE_MONITOR)
+        dados.set_metadata("performative", "inform")
+        dados.set_metadata("ontology", "dados_paciente")
+        dados.body = jsonpickle.encode(
+            DadosPaciente(str(self.jid), str(self.get("esp")),
+                          random.randint(self.get("bpm_min"), self.get("bpm_max") + 1),
+                          random.randint(self.get("bf_min"), self.get("bf_max") + 1),
+                          random.uniform(self.get("temp_min"), self.get("temp_max") + 1),
+                          None))
+        return dados
+
+
     # Efetua o registo no Agente Unidade
     class RegistarNaUnidade(OneShotBehaviour):
         async def run(self):
-            msg1 = Message(to=AGENTE_UNIDADE)
-            msg1.set_metadata("performative", "subscribe")
-            msg1.body = jsonpickle.encode(DadosPaciente(str(self.agent.jid),self.agent.get("esp"),
+            registo = Message(to=AGENTE_UNIDADE)
+            registo.set_metadata("performative", "subscribe")
+            registo.body = jsonpickle.encode(DadosPaciente(str(self.agent.jid),self.agent.get("esp"),
                                                         None,None,None,random.randint(GRAU_MIN + 1, GRAU_MAX + 1)))
-            await self.send(msg1)
+            await self.send(registo)
             print(f"{extrair_nome_agente(self.agent.jid)}: Registo enviado ao Agente Unidade.")
 
             reply = await self.receive(timeout=10)
@@ -51,16 +64,7 @@ class AgentePaciente(Agent):
 
             elif reply and (reply.get_metadata("performative") == "confirm") and (reply.get_metadata("ontology") == "registado"):
                 print(f"{extrair_nome_agente(self.agent.jid)}: Pronto para enviar dados.")
-                dados = Message(to=AGENTE_MONITOR)
-                dados.set_metadata("performative", "inform")
-                dados.set_metadata("ontology", "dados_paciente")
-                dados.body = jsonpickle.encode(
-                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"),
-                                  random.randint(self.agent.get("bpm_min"), self.agent.get("bpm_max") + 1),
-                                  random.randint(self.agent.get("bf_min"), self.agent.get("bf_max") + 1),
-                                  random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
-                                  None))
-                await self.send(dados)
+                await self.send(self.agent.mensagem_dados())
 
 
     '''
@@ -73,12 +77,14 @@ class AgentePaciente(Agent):
 
         async def run(self):
             msg = await self.receive()
+            # Caso o monitor peça que não envie mais dados
             if msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "stop_dados"):
                 self.kill()
 
-            if msg and (((msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado"))\
-                    or ((msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"))):
-
+            # Caso seja tratado (confirm de um Médico) ou esteja a recuperar (refuse do Monitor com ontology "novos_dados")
+            elif msg and ((msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado")):
+                # or ((msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"))):
+                # NOTA: ACHO QUE ESTE OR ESTAVA A SER DESNECESSÁRIO AQUI
 
                 bpm_min = self.agent.get("bpm_min") + K * (BPM_CIMA_IDEAL - self.agent.get("bpm_min"))
                 self.set("bpm_min", bpm_min)
@@ -98,35 +104,14 @@ class AgentePaciente(Agent):
                 temp_max = self.agent.get("temp_max") + K * (self.agent.get("temp_max") - TEMP_BAIXO_IDEAL)
                 self.set("temp_max", temp_max)
 
-                dados = Message(to=AGENTE_MONITOR)
-                dados.set_metadata("performative", "inform")
-                dados.set_metadata("ontology", "dados_paciente")
-                dados.body = jsonpickle.encode(
-                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"),
-                                  random.uniform(self.agent.get("bpm_min"), self.agent.get("bpm_max") + 1),
-                                  random.uniform(self.agent.get("bf_min"), self.agent.get("bf_max") + 1),
-                                  random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
-                                  None))
-                await self.send(dados)
+                await self.send(self.agent.mensagem_dados())
 
             elif msg and (msg.get_metadata("performative") == "refuse") and (msg.get_metadata("ontology") == "novos_dados"):
-                dados = Message(to=AGENTE_MONITOR)
-                dados.set_metadata("performative", "inform")
-                dados.set_metadata("ontology", "dados_paciente")
-                dados.body = jsonpickle.encode(
-                    DadosPaciente(str(self.agent.jid), self.agent.get("esp"),
-                                  random.randint(self.agent.get("bpm_min"), self.agent.get("bpm_max") + 1),
-                                  random.randint(self.agent.get("bf_min"), self.agent.get("bf_max") + 1),
-                                  random.uniform(self.agent.get("temp_min"), self.agent.get("temp_max") + 1),
-                                  None))
-                await self.send(dados)
+                await self.send(self.agent.mensagem_dados())
 
 
     # Termina a execução quando o Agente Unidade confirma a saída do paciente da UCI
     class LibertarCama(CyclicBehaviour):
-        async def on_start(self):
-            await self.agent.esperar_tratamento.join()
-
         async def run(self):
             msg = await self.receive(timeout=10)
             if msg and (msg.get_metadata("performative") == "unsubscribe"):
