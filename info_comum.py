@@ -3,7 +3,7 @@
 
 # Servidor
 SERVERS = ["192.168.35.1", "desktop-j59unhi"]
-XMPP_SERVER = SERVERS[0]
+XMPP_SERVER = SERVERS[1]
 PASSWORD = "NOPASSWORD"
 
 # JIDs
@@ -17,7 +17,7 @@ GRAU_MIN = 0
 GRAU_MAX = 9
 LIMITE_ALERTA = 5
 LIMITE_CONTADOR = 5
-COOLDOWN_MAX_ALERTA = 200
+COOLDOWN_MAX_ALERTA = 2000000#200
 ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
     "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"

@@ -91,24 +91,29 @@ class AgentePaciente(Agent):
             elif msg and ((msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado")):
 
                 ### NOTA: ESTES CÁLCULOS ESTÃO CORRIGIDOS À PADEIRO ###
+                if self.get("bpm_min") >= BPM_BAIXO_IDEAL:
+                    bpm_min = int(self.agent.get("bpm_min") + K * (BPM_CIMA_IDEAL - self.agent.get("bpm_min")))
+                    self.set("bpm_min", bpm_min)
 
-                bpm_min = int(self.agent.get("bpm_min") + K * (BPM_CIMA_IDEAL - self.agent.get("bpm_min")))
-                bpm_max = int(self.agent.get("bpm_max") - K * (self.agent.get("bpm_max") - BPM_BAIXO_IDEAL))
-                bpm_max, bpm_min = max(bpm_max, bpm_min), min(bpm_max, bpm_min)
-                self.set("bpm_min", bpm_min)
-                self.set("bpm_max", bpm_max)
+                if self.get("bpm_max") <= BPM_CIMA_IDEAL:
+                    bpm_max = int(self.agent.get("bpm_max") - K * (self.agent.get("bpm_max") - BPM_BAIXO_IDEAL))
+                    self.set("bpm_max", bpm_max)
 
-                bf_min = int(self.agent.get("bf_min") + K * (BF_CIMA_IDEAL - self.agent.get("bf_min")))
-                bf_max = int(self.agent.get("bf_max") - K * (self.agent.get("bf_max") - BF_BAIXO_IDEAL))
-                bf_max, bf_min = max(bf_max, bf_min), min(bf_max, bf_min)
-                self.set("bf_min", bf_min)
-                self.set("bf_max", bf_max)
+                if self.get("bf_min") >= BF_BAIXO_IDEAL:
+                    bf_min = int(self.agent.get("bf_min") + K * (BF_CIMA_IDEAL - self.agent.get("bf_min")))
+                    self.set("bf_min", bf_min)
 
-                temp_min = self.agent.get("temp_min") + K * (TEMP_CIMA_IDEAL - self.agent.get("temp_min"))
-                temp_max = self.agent.get("temp_max") - K * (self.agent.get("temp_max") - TEMP_BAIXO_IDEAL)
-                temp_max, temp_min = max(temp_max, temp_min), min(temp_max, temp_min)
-                self.set("temp_min", temp_min)
-                self.set("temp_max", temp_max)
+                if self.get("bf_max") <= BF_CIMA_IDEAL:
+                    bf_max = int(self.agent.get("bf_max") - K * (self.agent.get("bf_max") - BF_BAIXO_IDEAL))
+                    self.set("bf_max", bf_max)
+
+                if self.get("temp_min") >= TEMP_BAIXO_IDEAL:
+                    temp_min = self.agent.get("temp_min") + K * (TEMP_CIMA_IDEAL - self.agent.get("temp_min"))
+                    self.set("temp_min", temp_min)
+
+                if self.get("temp_max") <= TEMP_CIMA_IDEAL:
+                    temp_max = self.agent.get("temp_max") - K * (self.agent.get("temp_max") - TEMP_BAIXO_IDEAL)
+                    self.set("temp_max", temp_max)
 
                 await self.send(self.agent.mensagem_dados())
 

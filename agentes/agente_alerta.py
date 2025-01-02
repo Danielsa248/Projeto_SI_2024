@@ -85,14 +85,15 @@ class AgenteAlerta(Agent):
                             elif resposta and (resposta.get_metadata("performative") == "confirm"):
                                 print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} será cumprido.")
                                 # await asyncio.sleep(3)
-                                self.agent.filas_de_espera[fila].remove(i) # Remove paciente tratado da fila de espera
-                                serviu_requisicao = True
-                                break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
+                                if i in self.agent.filas_de_espera[fila]:
+                                    self.agent.filas_de_espera[fila].remove(i) # Remove paciente tratado da fila de espera
+                                    serviu_requisicao = True
+                                    break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
 
                         else:
                             self.agent.filas_de_espera[fila][i] = (dados_paciente, cooldown + 1)
 
-                        fila -= 1
+                    fila -= 1
 
 
     '''
@@ -110,9 +111,10 @@ class AgenteAlerta(Agent):
                 for fila in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
                     for j, (dados_paciente, cooldown) in enumerate(self.agent.filas_de_espera[fila][:]):
                         self.agent.filas_de_espera[fila + 1].append((dados_paciente, cooldown))
-                        self.agent.filas_de_espera[fila].remove(j)
-                        dados_paciente.set_grau(dados_paciente.get_grau() + 1)
-                        print(f"AGENTE ALERTA: Subiu o grau de prioridade de {extrair_nome_agente(dados_paciente.get_jid())}.")
+                        if j in self.agent.filas_de_espera[fila]:
+                            self.agent.filas_de_espera[fila].remove(j)
+                            dados_paciente.set_grau(dados_paciente.get_grau() + 1)
+                            print(f"AGENTE ALERTA: Subiu o grau de prioridade de {extrair_nome_agente(dados_paciente.get_jid())}.")
 
                         # Sincronização com o Agente Monitor
                         msg_monitor = Message(to=AGENTE_MONITOR)
