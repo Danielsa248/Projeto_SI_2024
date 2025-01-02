@@ -100,7 +100,15 @@ class AgenteMonitor(Agent):
 
                 status_atual = self.agent.pacientes[paciente_jid]
                 # Processamento da resposta com base no estado do paciente
-                if (grau <= GRAU_MIN) or (status_atual.get_contador() >= LIMITE_CONTADOR):
+                if grau >= LIMITE_ALERTA:
+                    print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
+                    alerta = Message(to=AGENTE_ALERTA)
+                    alerta.set_metadata("performative", "inform")
+                    alerta.body = jp.encode(dados_paciente)
+                    self.agent.pacientes[paciente_jid].set_contador(1)
+                    await self.send(alerta)
+
+                elif (grau <= GRAU_MIN) or (status_atual.get_contador() >= LIMITE_CONTADOR):
                     print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
                     self.agent.pacientes.pop(paciente_jid)
                     dados_paciente.set_grau(0) # NOTA: O grau é posto a 0 para a comunicação com o Agente Unidade
@@ -108,14 +116,6 @@ class AgenteMonitor(Agent):
                     resposta_paciente.set_metadata("performative", "refuse")
                     resposta_paciente.set_metadata("ontology", "stop_dados")
                     await self.send(resposta_paciente)
-
-                elif grau >= LIMITE_ALERTA:
-                    print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
-                    alerta = Message(to=AGENTE_ALERTA)
-                    alerta.set_metadata("performative", "inform")
-                    alerta.body = jp.encode(dados_paciente)
-                    self.agent.pacientes[paciente_jid].set_contador(1)
-                    await self.send(alerta)
 
                 else:
                     print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} continuará a ser monitorizado.")
