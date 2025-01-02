@@ -13,118 +13,81 @@ except ImportError:
 
 # Classe representativa do Agente Alerta
 class AgenteAlerta(Agent):
-    # Filas de espera relativas a cada grau de prioridade
+    # Filas de espera para re-tentativa de envio de alertas
     filas_de_espera = {grau: [] for grau in range(LIMITE_ALERTA, GRAU_MAX + 1)}
+
+    # Lock para bloqueio de acessos simultâneos a uma lista por dois behaviours
+    lock = asyncio.Lock()
 
     async def setup(self):
         print(f"AGENTE ALERTA: A iniciar...")
-        esperar_alerta = self.EsperarAlertas()
-        requisitar_tratamento = self.RequisitarTratamentos()
-        reavaliar_prioridades = self.ReavaliarPrioridades(period=10)
-        self.add_behaviour(esperar_alerta)
-        self.add_behaviour(requisitar_tratamento)
-        self.add_behaviour(reavaliar_prioridades)
-        self.lock = asyncio.Lock()  # Usado para prevenir acessos simultâneos de
-                                    # dois Behaviours à mesma lista de espera
+        processar_alertas = self.ProcessarAlertas()
+        tratar_filas_de_espera = self.TratarFilasDeEspera(period=10)
+        self.add_behaviour(processar_alertas)
+        self.add_behaviour(tratar_filas_de_espera)
+
+
+    # Função auxiliar para construção das mensagens a enviar ao Agente Gestor de Médicos
+    @staticmethod
+    def mensagem_gestor_medicos(dados_paciente):
+        requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
+        requisicao.set_metadata("performative", "request")
+        requisicao.body = jp.encode(dados_paciente)
+        return requisicao
 
 
     '''
-    Comportamento referente à espera de alertas enviados pelo Agente Monitor e
-    posicionamento dos mesmos em filas de espera conforme o seu grau de prioridade.
-
-    NOTA: Este comportamento parte do princípio que este agente pode receber vários
-    alertas em simultâneo e que pode ter de reenviar pedidos de tratamento em caso
-    de rejeição dos mesmos pelo Agente Gestor de Médicos.
+    Comportamento referente à espera de alertas enviados pelo Agente Monitor
+    e envio dos mesmos para o Agente Gestor de Médicos. Caso não hajam médicos
+    disponíveis para realizar o tratamento, o paciente é posicionado numa fila
+    de espera conforme o seu grau de prioridade.
     '''
-    class EsperarAlertas(CyclicBehaviour):
+    class ProcessarAlertas(CyclicBehaviour):
         async def run(self):
             alerta = await self.receive()
-            async with self.agent.lock:
-                if alerta and (alerta.get_metadata("performative") == "inform"):
-                    dados_paciente = jp.decode(alerta.body)
-                    paciente_jid = dados_paciente.get_jid()
-                    grau = dados_paciente.get_grau()
-                    self.agent.filas_de_espera[grau].append((dados_paciente, COOLDOWN_MAX_ALERTA)) # (dados, cooldown)
-                    print(f"AGENTE ALERTA: Recebido um alerta para o tratamento de {extrair_nome_agente(paciente_jid)}.")
+            if alerta and (alerta.get_metadata("performative") == "inform"):
+                dados_paciente = jp.decode(alerta.body)
+                paciente_jid = dados_paciente.get_jid()
+                grau = dados_paciente.get_grau()
+                print(f"AGENTE ALERTA: Recebido alerta relativo ao {extrair_nome_agente(paciente_jid)}.")
+
+                await self.send(self.agent.mensagem_gestor_medicos(dados_paciente))
+                print(f"AGENTE ALERTA: Enviada requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
+
+                resposta = await self.receive(timeout=20)
+
+                if resposta and (resposta.get_metadata("performative") == "confirm"):
+                    print(f"AGENTE ALERTA: Recebida a confirmação de tratamento para o {extrair_nome_agente(paciente_jid)}")
+
+                elif resposta and (resposta.get_metadata("performative") == "refuse"):
+                    async with self.agent.lock:
+                        self.agent.filas_de_espera[grau].append(dados_paciente)
+                    print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} foi colocado na fila de espera {grau}.")
 
 
     '''
-    Comportamento referente ao envio de uma requisição de tratamento
-    ao Agente Gestor de Médicos e tratamento da resposta recebida.
-
-    NOTA: Este comportamento assume que os pedidos de tratamento estão organizados
-    em diferentes filas de espera e tenta que sejam servidos de forma justa, promovendo
-    o tratamento prioritário de pedidos mais urgentes, sem comprometer os restantes.
+    Comportamento referente ao envio periódico de requisições de tratamento
+    para pacientes nas filas de espera. Caso as requisições sejam
+    cumpridas o paciente abandona a fila de espera em que se encontra.
     '''
-    class RequisitarTratamentos(CyclicBehaviour):
+    class TratarFilasDeEspera(PeriodicBehaviour):
         async def run(self):
+            fila = GRAU_MAX
             async with self.agent.lock:
-                fila = GRAU_MAX
-                serviu_requisicao = False
+                while fila >= LIMITE_ALERTA:
+                    for dados_paciente in self.agent.filas_de_espera[fila][:]:
+                        paciente_jid = dados_paciente.get_jid()
 
-                while (fila >= LIMITE_ALERTA) and not serviu_requisicao:
-                    for i, (dados_paciente, cooldown) in enumerate(self.agent.filas_de_espera[fila][:]):
-                        # Envio dos dados para tentativa de tratamento
-                        if cooldown > COOLDOWN_MAX_ALERTA:
-                            paciente_jid = dados_paciente.get_jid()
-                            print(f"AGENTE ALERTA: Será enviado o pedido de tratamento de {extrair_nome_agente(paciente_jid)}.")
-                            # await asyncio.sleep(3)
-                            requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
-                            requisicao.set_metadata("performative", "request")
-                            requisicao.body = jp.encode(dados_paciente)
-                            await self.send(requisicao)
+                        await self.send(self.agent.mensagem_gestor_medicos(dados_paciente))
+                        print(f"AGENTE ALERTA: Enviada nova requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
 
-                            # Processamento da resposta do Agente Gestor de Médicos
-                            resposta = await self.receive(timeout=10)
+                        resposta = await self.receive(timeout=20)
 
-                            if resposta and (resposta.get_metadata("performative") == "refuse"):
-                                print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} irá regressar à fila de espera.")
-                                # await asyncio.sleep(3)
-                                self.agent.filas_de_espera[fila][i] = (dados_paciente, 1) # Reínicia o contador
+                        if resposta and (resposta.get_metadata("performative") == "refuse"):
+                            print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} continuará na fila de espera {fila}.")
 
-                            elif resposta and (resposta.get_metadata("performative") == "confirm"):
-                                print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} será cumprido.")
-                                # await asyncio.sleep(3)
-                                if i in self.agent.filas_de_espera[fila]:
-                                    self.agent.filas_de_espera[fila].remove(i) # Remove paciente tratado da fila de espera
-                                    serviu_requisicao = True
-                                    break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
-
-                        else:
-                            self.agent.filas_de_espera[fila][i] = (dados_paciente, cooldown + 1)
+                        elif resposta and (resposta.get_metadata("performative") == "confirm"):
+                            self.agent.filas_de_espera[fila].remove(dados_paciente)
+                            print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} saiu da fila de espera {fila}.")
 
                     fila -= 1
-
-
-    '''
-    Comportamento referente à atualização dos níveis de prioridade de
-    pacientes cujos alertas gerados não tenham sido atendidos ao fim
-    de X segundos, sendo trocada a fila de espera em que se encontram.
-    
-    NOTA: Este comportamento assume a existência de diferentes filas de espera, com
-    diferentes prioridades. Para além disso, comunica as alterações nos graus de
-    prioridade ao Agente Monitor e Agente Unidade, para efeitos de sincronização.
-    '''
-    class ReavaliarPrioridades(PeriodicBehaviour):
-        async def run(self):
-            async with self.agent.lock:
-                for fila in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
-                    for j, (dados_paciente, cooldown) in enumerate(self.agent.filas_de_espera[fila][:]):
-                        self.agent.filas_de_espera[fila + 1].append((dados_paciente, cooldown))
-                        if j in self.agent.filas_de_espera[fila]:
-                            self.agent.filas_de_espera[fila].remove(j)
-                            dados_paciente.set_grau(dados_paciente.get_grau() + 1)
-                            print(f"AGENTE ALERTA: Subiu o grau de prioridade de {extrair_nome_agente(dados_paciente.get_jid())}.")
-
-                        # Sincronização com o Agente Monitor
-                        msg_monitor = Message(to=AGENTE_MONITOR)
-                        msg_monitor.set_metadata("performative", "inform")
-                        msg_monitor.set_metadata("ontology", "atualizacao_grau")
-                        msg_monitor.body = jp.encode(dados_paciente)
-                        await self.send(msg_monitor)
-
-                        # Sincronização com o Agente Unidade
-                        msg_unidade = Message(to=AGENTE_UNIDADE)
-                        msg_unidade.set_metadata("performative", "inform")
-                        msg_unidade.body = jp.encode(dados_paciente)
-                        await self.send(msg_unidade)
