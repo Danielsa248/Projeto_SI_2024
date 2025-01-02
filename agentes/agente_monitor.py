@@ -111,7 +111,7 @@ class AgenteMonitor(Agent):
                 elif (grau <= GRAU_MIN) or (status_atual.get_contador() >= LIMITE_CONTADOR):
                     print(f"AGENTE MONITOR: O paciente {extrair_nome_agente(paciente_jid)} vai deixar de ser monitorizado.")
                     self.agent.pacientes.pop(paciente_jid)
-                    dados_paciente.set_grau(0) # NOTA: O grau é posto a 0 para a comunicação com o Agente Unidade
+                    dados_paciente.set_grau(GRAU_MIN) # NOTA: O grau é posto a 0 para a comunicação com o Agente Unidade
                     resposta_paciente = Message(to=paciente_jid)
                     resposta_paciente.set_metadata("performative", "refuse")
                     resposta_paciente.set_metadata("ontology", "stop_dados")
