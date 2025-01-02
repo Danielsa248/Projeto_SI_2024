@@ -44,7 +44,7 @@ class AgenteAlerta(Agent):
                     dados_paciente = jp.decode(alerta.body)
                     paciente_jid = dados_paciente.get_jid()
                     grau = dados_paciente.get_grau()
-                    self.agent.filas_de_espera[grau].append(dados_paciente)
+                    self.agent.filas_de_espera[grau].append((dados_paciente, COOLDOWN_MAX_ALERTA)) # (dados, cooldown)
                     print(f"AGENTE ALERTA: Recebido um alerta para o tratamento de {extrair_nome_agente(paciente_jid)}.")
 
 
@@ -63,31 +63,36 @@ class AgenteAlerta(Agent):
                 serviu_requisicao = False
 
                 while (fila >= LIMITE_ALERTA) and not serviu_requisicao:
-                    for dados_paciente in self.agent.filas_de_espera[fila][:]:
+                    for i, (dados_paciente, cooldown) in enumerate(self.agent.filas_de_espera[fila][:]):
                         # Envio dos dados para tentativa de tratamento
-                        paciente_jid = dados_paciente.get_jid()
-                        print(f"AGENTE ALERTA: Será enviado o pedido de tratamento de {extrair_nome_agente(paciente_jid)}.")
-                        # await asyncio.sleep(3) # Reduzir "spam" no terminal
-                        self.agent.filas_de_espera[fila].remove(dados_paciente)
-                        requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
-                        requisicao.set_metadata("performative", "request")
-                        requisicao.body = jp.encode(dados_paciente)
-                        await self.send(requisicao)
+                        if cooldown > COOLDOWN_MAX_ALERTA:
+                            paciente_jid = dados_paciente.get_jid()
+                            print(f"AGENTE ALERTA: Será enviado o pedido de tratamento de {extrair_nome_agente(paciente_jid)}.")
+                            # await asyncio.sleep(3)
+                            requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
+                            requisicao.set_metadata("performative", "request")
+                            requisicao.body = jp.encode(dados_paciente)
+                            await self.send(requisicao)
 
-                        # Processamento da resposta do Agente Gestor de Médicos
-                        resposta = await self.receive(timeout=20)
-                        if resposta and (resposta.get_metadata("performative") == "refuse"):
-                            print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} irá regressar à fila de espera.")
-                            # await asyncio.sleep(3) # Reduzir "spam" no terminal
-                            nova_posicao = len(self.agent.filas_de_espera[fila]) // 2
-                            self.agent.filas_de_espera[fila].insert(nova_posicao, dados_paciente) # "Puxa" o paciente de volta para o meio da fila
-                        elif resposta and (resposta.get_metadata("performative") == "confirm"):
-                            print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} será cumprido.")
-                            # await asyncio.sleep(3) # Reduzir "spam" no terminal
-                            serviu_requisicao = True
-                            break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
+                            # Processamento da resposta do Agente Gestor de Médicos
+                            resposta = await self.receive(timeout=10)
 
-                    fila -= 1
+                            if resposta and (resposta.get_metadata("performative") == "refuse"):
+                                print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} irá regressar à fila de espera.")
+                                # await asyncio.sleep(3)
+                                self.agent.filas_de_espera[fila][i] = (dados_paciente, 1) # Reínicia o contador
+
+                            elif resposta and (resposta.get_metadata("performative") == "confirm"):
+                                print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} será cumprido.")
+                                # await asyncio.sleep(3)
+                                self.agent.filas_de_espera[fila].remove(i) # Remove paciente tratado da fila de espera
+                                serviu_requisicao = True
+                                break # Regressa ao inicío da fila de maior prioridade quando serve um pedido
+
+                        else:
+                            self.agent.filas_de_espera[fila][i] = (dados_paciente, cooldown + 1)
+
+                        fila -= 1
 
 
     '''
@@ -102,10 +107,10 @@ class AgenteAlerta(Agent):
     class ReavaliarPrioridades(PeriodicBehaviour):
         async def run(self):
             async with self.agent.lock:
-                for i in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
-                    for dados_paciente in self.agent.filas_de_espera[i][:]:
-                        self.agent.filas_de_espera[i + 1].append(dados_paciente)
-                        self.agent.filas_de_espera[i].remove(dados_paciente)
+                for fila in range(GRAU_MAX - 1, LIMITE_ALERTA - 1, -1):
+                    for j, (dados_paciente, cooldown) in enumerate(self.agent.filas_de_espera[fila][:]):
+                        self.agent.filas_de_espera[fila + 1].append((dados_paciente, cooldown))
+                        self.agent.filas_de_espera[fila].remove(j)
                         dados_paciente.set_grau(dados_paciente.get_grau() + 1)
                         print(f"AGENTE ALERTA: Subiu o grau de prioridade de {extrair_nome_agente(dados_paciente.get_jid())}.")
 

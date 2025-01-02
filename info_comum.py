@@ -17,6 +17,7 @@ GRAU_MIN = 0
 GRAU_MAX = 9
 LIMITE_ALERTA = 5
 LIMITE_CONTADOR = 5
+COOLDOWN_MAX_ALERTA = 200
 ESPECIALIDADES = [
     "Cardiologia", "Cirurgia Geral", "Gastrenterologia", "Medicina Interna"
     "Ortopedia", "Cirurgia Cardiotorácica", "Cuidados Gerais"
