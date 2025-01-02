@@ -6,35 +6,47 @@ from agentes.agente_gestor_medicos import *
 from agentes.agente_medico import *
 from info_comum import *
 
+from spade import quit_spade
 
-if __name__ == "__main__":
+
+def main():
+    futures = []
+
     unidade = AgenteUnidade(AGENTE_UNIDADE, PASSWORD)
     future = unidade.start(auto_register=True)
-    future.result()
+    futures.append(future)
 
     monitor = AgenteMonitor(AGENTE_MONITOR, PASSWORD)
     future = monitor.start(auto_register=True)
-    future.result()
+    futures.append(future)
 
     alerta = AgenteAlerta(AGENTE_ALERTA, PASSWORD)
     future = alerta.start(auto_register=True)
-    future.result()
+    futures.append(future)
 
     gestor_medicos = AgenteGestorMedicos(AGENTE_GESTOR_MEDICOS, PASSWORD)
     future = gestor_medicos.start(auto_register=True)
-    future.result()
+    futures.append(future)
+
+    for future in futures:
+        future.result()
+
+    futures = []
 
     medicos = []
     num_medicos = 0
     while num_medicos < 15:
         medico = AgenteMedico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
-        future.result()
+        futures.append(future)
         medicos.append(medico)
         num_medicos += 1
+    for future in futures:
+        future.result()
+
+    futures = []
 
     pacientes = []
-    futures = []
     num_pacientes = 0
     while num_pacientes < 10:
         paciente = AgentePaciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
@@ -67,3 +79,9 @@ if __name__ == "__main__":
             alerta.stop()
             gestor_medicos.stop()
             break
+
+if __name__ == "__main__":
+    try:
+        main()
+    finally:
+        quit_spade()

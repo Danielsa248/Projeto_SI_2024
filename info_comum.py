@@ -3,7 +3,7 @@
 
 # Servidor
 SERVERS = ["192.168.35.1", "desktop-j59unhi"]
-XMPP_SERVER = SERVERS[0] # Placeholder para o endereço do servidor XMPP
+XMPP_SERVER = SERVERS[0]
 PASSWORD = "NOPASSWORD"
 
 # JIDs
@@ -40,7 +40,7 @@ TEMP_BAIXO_INICIAL = 30
 TEMP_CIMA_INICIAL = 44
 
 # Fator de incrementação
-K = 0.5
+K = 0.2
 
 # Funções globais
 def extrair_nome_agente(agente_jid):

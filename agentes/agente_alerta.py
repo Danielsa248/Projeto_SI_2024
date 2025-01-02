@@ -75,7 +75,7 @@ class AgenteAlerta(Agent):
                         await self.send(requisicao)
 
                         # Processamento da resposta do Agente Gestor de Médicos
-                        resposta = await self.receive(timeout=5)
+                        resposta = await self.receive(timeout=20)
                         if resposta and (resposta.get_metadata("performative") == "refuse"):
                             print(f"AGENTE ALERTA: O pedido de tratamento de {extrair_nome_agente(paciente_jid)} irá regressar à fila de espera.")
                             # await asyncio.sleep(3) # Reduzir "spam" no terminal
