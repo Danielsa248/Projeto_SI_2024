@@ -17,12 +17,12 @@ class AgentePaciente(Agent):
 
     async def setup(self):
         print(f"{extrair_nome_agente(self.jid)}: A iniciar...")
-        self.set("bpm_max", random.randint((BPM_BAIXO_INICIAL + BPM_CIMA_INICIAL) // 2, BPM_CIMA_INICIAL + 1))
-        self.set("bpm_min", random.randint(BPM_BAIXO_INICIAL, (BPM_CIMA_INICIAL + BPM_BAIXO_INICIAL) // 2))
-        self.set("bf_max", random.randint((BF_BAIXO_INICIAL + BF_CIMA_INICIAL) // 2, BF_CIMA_INICIAL + 1))
-        self.set("bf_min", random.randint(BF_BAIXO_INICIAL, (BF_CIMA_INICIAL + BF_BAIXO_INICIAL) // 2))
-        self.set("temp_max", random.uniform((TEMP_BAIXO_INICIAL + TEMP_CIMA_INICIAL) / 2, TEMP_CIMA_INICIAL + 1))
-        self.set("temp_min", random.uniform(TEMP_BAIXO_INICIAL, (TEMP_CIMA_INICIAL + TEMP_BAIXO_INICIAL) / 2))
+        self.set("bpm_max", BPM_CIMA_INICIAL)
+        self.set("bpm_min", BPM_BAIXO_INICIAL)
+        self.set("bf_max", BF_CIMA_INICIAL)
+        self.set("bf_min", BF_BAIXO_INICIAL)
+        self.set("temp_max", TEMP_CIMA_INICIAL)
+        self.set("temp_min", TEMP_BAIXO_INICIAL)
         self.set("esp", random.choice(ESPECIALIDADES))
 
         self.registar_unidade = self.RegistarNaUnidade()
@@ -89,31 +89,20 @@ class AgentePaciente(Agent):
 
             # Caso seja tratado (confirm de um Médico) ou esteja a recuperar (refuse do Monitor com ontology "novos_dados")
             elif msg and ((msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "tratado")):
+                bpm_min = int(self.agent.get("bpm_min") - K * (self.agent.get("bpm_min") - BPM_BAIXO_IDEAL))
+                self.agent.set("bpm_min", bpm_min)
+                bpm_max = int(self.agent.get("bpm_max") + K * (BPM_CIMA_IDEAL - self.agent.get("bpm_max")))
+                self.agent.set("bpm_max", bpm_max)
 
-                ### NOTA: ESTES CÁLCULOS ESTÃO CORRIGIDOS À PADEIRO ###
-                if self.get("bpm_min") >= BPM_BAIXO_IDEAL:
-                    bpm_min = int(self.agent.get("bpm_min") + K * (BPM_CIMA_IDEAL - self.agent.get("bpm_min")))
-                    self.set("bpm_min", bpm_min)
+                bf_min = int(self.agent.get("bf_min") - K * (self.agent.get("bf_min") - BF_BAIXO_IDEAL))
+                self.agent.set("bf_min", bf_min)
+                bf_max = int(self.agent.get("bf_max") + K * (BF_CIMA_IDEAL - self.agent.get("bf_max")))
+                self.agent.set("bf_max", bf_max)
 
-                if self.get("bpm_max") <= BPM_CIMA_IDEAL:
-                    bpm_max = int(self.agent.get("bpm_max") - K * (self.agent.get("bpm_max") - BPM_BAIXO_IDEAL))
-                    self.set("bpm_max", bpm_max)
-
-                if self.get("bf_min") >= BF_BAIXO_IDEAL:
-                    bf_min = int(self.agent.get("bf_min") + K * (BF_CIMA_IDEAL - self.agent.get("bf_min")))
-                    self.set("bf_min", bf_min)
-
-                if self.get("bf_max") <= BF_CIMA_IDEAL:
-                    bf_max = int(self.agent.get("bf_max") - K * (self.agent.get("bf_max") - BF_BAIXO_IDEAL))
-                    self.set("bf_max", bf_max)
-
-                if self.get("temp_min") >= TEMP_BAIXO_IDEAL:
-                    temp_min = self.agent.get("temp_min") + K * (TEMP_CIMA_IDEAL - self.agent.get("temp_min"))
-                    self.set("temp_min", temp_min)
-
-                if self.get("temp_max") <= TEMP_CIMA_IDEAL:
-                    temp_max = self.agent.get("temp_max") - K * (self.agent.get("temp_max") - TEMP_BAIXO_IDEAL)
-                    self.set("temp_max", temp_max)
+                temp_min = self.agent.get("temp_min") - K * (self.agent.get("temp_min") - TEMP_BAIXO_IDEAL)
+                self.agent.set("temp_min", temp_min)
+                temp_max = self.agent.get("temp_max") + K * (TEMP_CIMA_IDEAL - self.agent.get("temp_max"))
+                self.agent.set("temp_max", temp_max)
 
                 await self.send(self.agent.mensagem_dados())
 

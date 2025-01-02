@@ -7,8 +7,10 @@ import jsonpickle as jp
 
 try:
     from info_comum import *
+    from classes.dados_paciente import *
 except ImportError:
     from Projeto_SI_2024.info_comum import *
+    from Projeto_SI_2024.classes.dados_paciente import *
 
 
 # Classe representativa do Agente Alerta
@@ -22,8 +24,10 @@ class AgenteAlerta(Agent):
     async def setup(self):
         print(f"AGENTE ALERTA: A iniciar...")
         processar_alertas = self.ProcessarAlertas()
+        aguardar_resposta = self.AguardarResposta()
         tratar_filas_de_espera = self.TratarFilasDeEspera(period=10)
         self.add_behaviour(processar_alertas)
+        self.add_behaviour(aguardar_resposta)
         self.add_behaviour(tratar_filas_de_espera)
 
 
@@ -48,21 +52,36 @@ class AgenteAlerta(Agent):
             if alerta and (alerta.get_metadata("performative") == "inform"):
                 dados_paciente = jp.decode(alerta.body)
                 paciente_jid = dados_paciente.get_jid()
-                grau = dados_paciente.get_grau()
                 print(f"AGENTE ALERTA: Recebido alerta relativo ao {extrair_nome_agente(paciente_jid)}.")
 
                 await self.send(self.agent.mensagem_gestor_medicos(dados_paciente))
                 print(f"AGENTE ALERTA: Enviada requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
 
-                resposta = await self.receive(timeout=20)
 
-                if resposta and (resposta.get_metadata("performative") == "confirm"):
-                    print(f"AGENTE ALERTA: Recebida a confirmação de tratamento para o {extrair_nome_agente(paciente_jid)}")
+    class AguardarResposta(CyclicBehaviour):
+        async def run(self):
+            resposta = await self.receive()
+            if resposta and (resposta.get_metadata("performative") == "confirm"):
+                dados_paciente = jp.decode(resposta.body)
+                paciente_jid = dados_paciente.get_jid()
+                grau = dados_paciente.get_grau()
+                if dados_paciente in self.agent.filas_de_espera[grau]:
+                    async with self.agent.lock:
+                        self.agent.filas_de_espera[grau].remove(dados_paciente)
+                        print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} abandonou a fila de espera de grau {grau}.")
+                else:
+                    print(f"AGENTE ALERTA: Confirmado o tratamento do {extrair_nome_agente(paciente_jid)}.")
 
-                elif resposta and (resposta.get_metadata("performative") == "refuse"):
+            elif resposta and (resposta.get_metadata("performative") == "refuse"):
+                dados_paciente = jp.decode(resposta.body)
+                paciente_jid = dados_paciente.get_jid()
+                grau = dados_paciente.get_grau()
+                if dados_paciente in self.agent.filas_de_espera[grau]:
+                    print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} continuará na fila de espera de grau {grau}.")
+                else:
                     async with self.agent.lock:
                         self.agent.filas_de_espera[grau].append(dados_paciente)
-                    print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} foi colocado na fila de espera {grau}.")
+                        print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} foi colocado na fila de espera {grau}.")
 
 
     '''
@@ -79,15 +98,6 @@ class AgenteAlerta(Agent):
                         paciente_jid = dados_paciente.get_jid()
 
                         await self.send(self.agent.mensagem_gestor_medicos(dados_paciente))
-                        print(f"AGENTE ALERTA: Enviada nova requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
-
-                        resposta = await self.receive(timeout=20)
-
-                        if resposta and (resposta.get_metadata("performative") == "refuse"):
-                            print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} continuará na fila de espera {fila}.")
-
-                        elif resposta and (resposta.get_metadata("performative") == "confirm"):
-                            self.agent.filas_de_espera[fila].remove(dados_paciente)
-                            print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} saiu da fila de espera {fila}.")
+                        print(f"AGENTE ALERTA: Enviada **NOVA** requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
 
                     fila -= 1

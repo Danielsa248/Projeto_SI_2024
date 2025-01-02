@@ -71,6 +71,7 @@ class AgenteGestorMedicos(Agent):
 
                     #Envia mensagem ao Agente Alerta para lhe informar sobre o pedido
                     msg_alerta = Message(to=AGENTE_ALERTA)
+                    msg_alerta.body = jsonpickle.encode(dados)
 
                     if med_encontrado:
                         msg_alerta.set_metadata("performative", "confirm")

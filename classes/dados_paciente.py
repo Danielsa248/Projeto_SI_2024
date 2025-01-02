@@ -1,4 +1,6 @@
 #Classe para a comunicação de dados médicos de um paciente
+from symbol import and_expr
+
 
 class DadosPaciente:
     def __init__(self,jid,especialidade,bpm,bf,temperatura,grauPrioridade):
@@ -47,3 +49,15 @@ class DadosPaciente:
     def set_grau(self,grauPrioridade):
         self.grauPrioridade = grauPrioridade
 
+
+    def __eq__(self, other):
+        if not isinstance(other, DadosPaciente):
+            return False
+        return (
+                self.jid == other.jid and
+                self.especialidade == other.especialidade and
+                self.bpm == other.bpm and
+                self.bf == other.bf and
+                self.temperatura == other.temperatura and
+                self.grauPrioridade == other.grauPrioridade
+        )
