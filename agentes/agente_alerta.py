@@ -34,8 +34,7 @@ class AgenteAlerta(Agent):
 
 
     # Função auxiliar para construção das mensagens a enviar ao Agente Gestor de Médicos
-    @staticmethod
-    def mensagem_gestor_medicos(dados_paciente):
+    def mensagem_gestor_medicos(self, dados_paciente):
         requisicao = Message(to=AGENTE_GESTOR_MEDICOS)
         requisicao.set_metadata("performative", "request")
         requisicao.body = jp.encode(dados_paciente)
@@ -44,9 +43,8 @@ class AgenteAlerta(Agent):
 
     '''
     Comportamento referente à espera de alertas enviados pelo Agente Monitor
-    e envio dos mesmos para o Agente Gestor de Médicos. Caso não hajam médicos
-    disponíveis para realizar o tratamento, o paciente é posicionado numa fila
-    de espera conforme o seu grau de prioridade.
+    e envio dos mesmos para o Agente Gestor de Médicos. A resposta às mensagens
+    enviadas neste comportamento é realizada ao nível do comportamento AguardarResposta.
     '''
     class ProcessarAlertas(CyclicBehaviour):
         async def run(self):
@@ -60,6 +58,11 @@ class AgenteAlerta(Agent):
                 print(f"AGENTE ALERTA: Enviada requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
 
 
+    '''
+    Comportamento referente ao processamento de respostas aos pedidos de
+    tratamento enviadas pelo Agente Gestor de Médicos. Os dados dos pacientes
+    são adicionados ou removidos a filas de espera conforme a resposta obtida.
+    '''
     class AguardarResposta(CyclicBehaviour):
         async def run(self):
             resposta = await self.receive()
@@ -88,8 +91,8 @@ class AgenteAlerta(Agent):
 
     '''
     Comportamento referente ao envio periódico de requisições de tratamento
-    para pacientes nas filas de espera. Caso as requisições sejam
-    cumpridas o paciente abandona a fila de espera em que se encontra.
+    para pacientes nas filas de espera. A resposta às mensagens enviadas neste
+    comportamento é realizada ao nível do comportamento AguardarResposta.
     '''
     class TratarFilasDeEspera(PeriodicBehaviour):
         async def run(self):
@@ -105,6 +108,11 @@ class AgenteAlerta(Agent):
                     fila -= 1
 
 
+    '''
+    Comportamento referente à receção de atualizações nas especialidades
+    em que um paciente está internado e atualização dos dados do mesmo
+    na respetiva fila de espera (Se os dados ainda lá estiverem)
+    '''
     class AtualizarPacientes(CyclicBehaviour):
         async def run(self):
             update = await self.receive(timeout=10)

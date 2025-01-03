@@ -37,7 +37,7 @@ def main():
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 50:
+    while num_medicos < 10:
         medico = AgenteMedico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         futures.append(future)
@@ -56,7 +56,7 @@ def main():
 
     pacientes = []
     num_pacientes = 0
-    while num_pacientes < 3:
+    while num_pacientes < 30:
         paciente = AgentePaciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
         future = paciente.start(auto_register=True)
         futures.append(future)

@@ -208,13 +208,13 @@ class AgenteUnidade(Agent):
         async def run(self):
             msg = await self.receive(timeout=10)
 
-            if msg and (msg.get_metadata("performative") == "susbcribe") and (msg.get_metadata("ontology") == "registar_medico"):
+            if msg and (msg.get_metadata("performative") == "subscribe") and (msg.get_metadata("ontology") == "registar_medico"):
                 medico = jsonpickle.decode(msg.body)
                 especialidade = medico.get_especialidade()
 
                 if especialidade != "Cuidados Gerais":
-                    if especialidade not in self.agent.salas:
-                        self.agent.salas[especialidade][1] = [{}, rand.randint(8,15)]
+                    if especialidade not in self.agent.salas.keys():
+                        self.agent.salas[especialidade] = [{}, rand.randint(8,15)]
 
 
     class UpdatePrioridadeBehav(CyclicBehaviour):
