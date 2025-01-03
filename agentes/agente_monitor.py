@@ -20,9 +20,7 @@ class AgenteMonitor(Agent):
     async def setup(self):
         print(f"AGENTE MONITOR: A iniciar...")
         monitorizar_pacientes = self.MonitorizarPacientes()
-        #feedback_alerta = self.FeedbackAlerta()
         self.add_behaviour(monitorizar_pacientes)
-        #self.add_behaviour(feedback_alerta)
 
 
     '''
@@ -104,6 +102,7 @@ class AgenteMonitor(Agent):
                     print(f"AGENTE MONITOR: Os dados de {extrair_nome_agente(paciente_jid)} serão reencaminhados para o Agente Alerta.")
                     alerta = Message(to=AGENTE_ALERTA)
                     alerta.set_metadata("performative", "inform")
+                    alerta.set_metadata("ontology", "alerta")
                     alerta.body = jp.encode(dados_paciente)
                     self.agent.pacientes[paciente_jid].set_contador(1)
                     await self.send(alerta)
@@ -129,21 +128,3 @@ class AgenteMonitor(Agent):
                 atualizacao.set_metadata("performative", "inform")
                 atualizacao.body = jp.encode(dados_paciente)
                 await self.send(atualizacao)
-
-    '''
-    Comportamento referente à receção de atualizações nos graus de prioridade
-    de pacientes em espera no Agente Alerta, enviadas pelo próprio.
-    
-    NOTA: Este comportamento existe porque o Agente Alerta pode atualizar graus de
-    prioridade de pacientes e o Agente Monitor deve manter-se a par dessas atualizações.
-    class FeedbackAlerta(CyclicBehaviour):
-        async def run(self):
-            dados = await self.receive()
-            if (dados and (dados.get_metadata("performative") == "inform") and
-                (dados.get_metadata("ontology") == "atualizacao_grau")):
-                # Processamento dos dados recebidos
-                dados_paciente = jp.decode(dados.body)
-                paciente_jid = dados_paciente.get_jid()
-                grau = dados_paciente.get_grau()
-                self.agent.pacientes[paciente_jid].set_grau(grau)
-    '''

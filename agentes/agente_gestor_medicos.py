@@ -99,9 +99,8 @@ class AgenteGestorMedicos(Agent):
             if conclusao:
                 con = conclusao.get_metadata("performative")
                 if con == "confirm":
-                    info = conclusao.body.split(",")
-                    medico = info[0]
-                    especialidade = info[1]
+                    medico = conclusao.sender
+                    especialidade = conclusao.body
 
                     for med in self.agent.medicos[especialidade]:
                         if med[0] == medico:

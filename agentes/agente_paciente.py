@@ -34,7 +34,7 @@ class AgentePaciente(Agent):
 
 
     # Função para geração de dados médicos
-    def mensagem_dados(self): # PODE SER ISTO QUE CAUSA OS ERROS COM O RANDOM
+    def mensagem_dados(self):
         dados = Message(to=AGENTE_MONITOR)
         dados.set_metadata("performative", "inform")
         dados.set_metadata("ontology", "dados_paciente")
@@ -58,6 +58,7 @@ class AgentePaciente(Agent):
         async def run(self):
             registo = Message(to=AGENTE_UNIDADE)
             registo.set_metadata("performative", "subscribe")
+            registo.set_metadata("ontology", "registar_paciente")
             registo.body = jsonpickle.encode(DadosPaciente(str(self.agent.jid),self.agent.get("esp"),
                                                         None,None,None,random.randint(GRAU_MIN + 1, GRAU_MAX + 1)))
             await self.send(registo)
@@ -65,11 +66,16 @@ class AgentePaciente(Agent):
 
             reply = await self.receive(timeout=10)
             if reply and reply.get_metadata("performative") == "refuse":
-                print(f"{extrair_nome_agente(self.agent.jid)}: Os dados não são graves o suficiente para entrar na UCI.")
+                print(f"{extrair_nome_agente(self.agent.jid)}: Não conseguiu entrar na UCI.")
                 await self.agent.stop()
 
             elif reply and (reply.get_metadata("performative") == "confirm") and (reply.get_metadata("ontology") == "registado"):
                 print(f"{extrair_nome_agente(self.agent.jid)}: Pronto para enviar dados.")
+                await self.send(self.agent.mensagem_dados())
+
+            elif reply and (reply.get_metadata("performative") == "confirm") and (reply.get_metadata("ontology") == "cuidados_gerais"):
+                self.agent.set("esp", "Cuidados Gerais")
+                print(f"{extrair_nome_agente(self.agent.jid)}: Pronto para enviar dados (Nos Cuidados Gerais porque a sala da especialidade está cheia)")
                 await self.send(self.agent.mensagem_dados())
 
 
@@ -110,10 +116,25 @@ class AgentePaciente(Agent):
                 await self.send(self.agent.mensagem_dados())
 
 
-    # Termina a execução quando o Agente Unidade confirma a saída do paciente da UCI
+    # Termina a execução quando o Agente Unidade confirma a saída do paciente do seu local atual
     class LibertarCama(CyclicBehaviour):
         async def run(self):
             msg = await self.receive(timeout=10)
-            if msg and (msg.get_metadata("performative") == "unsubscribe"):
+
+            if msg and (msg.get_metadata("performative") == "unsubscribe") and (msg.get_metadata("ontology") == "curado"):
                 print(f"{extrair_nome_agente(self.agent.jid)}: ESTOU CURADO!!!!!!!!!!!!!!!!!!")
                 await self.agent.stop()
+
+            elif msg and (msg.get_metadata("performative") == "unsubscribe") and (msg.get_metadata("ontology") == "transferido"):
+                print(f"{extrair_nome_agente(self.agent.jid)}: FUI TRANSFERIDO PARA OUTRA UCI")
+                await self.agent.stop()
+
+            elif msg and (msg.get_metadata("performative") == "confirm") and (msg.get_metadata("ontology") == "cuidados_gerais"):
+                self.agent.set("esp", "Cuidados Gerais")
+                print(f"{extrair_nome_agente(self.agent.jid)}: FUI TRANSFERIDO PARA OS CUIDADOS GERAIS")
+
+                atualizacao_monitor = Message(to=AGENTE_ALERTA)
+                atualizacao_monitor.set_metadata("performative", "inform")
+                atualizacao_monitor.set_metadata("ontology", "update_especialidade")
+                atualizacao_monitor.body = self.agent.get("esp")
+                await self.send(atualizacao_monitor)

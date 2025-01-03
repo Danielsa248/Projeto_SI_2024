@@ -37,7 +37,7 @@ def main():
 
     medicos = []
     num_medicos = 0
-    while num_medicos < 3:
+    while num_medicos < 50:
         medico = AgenteMedico(f"Medico{num_medicos}@{XMPP_SERVER}", PASSWORD)
         future = medico.start(auto_register=True)
         futures.append(future)
@@ -46,11 +46,17 @@ def main():
     for future in futures:
         future.result()
 
+    meds_cuidados_gerais = 0
+    while meds_cuidados_gerais < MEDS_CUIDADOS_GERAIS:
+        if meds_cuidados_gerais <= num_medicos:
+            medicos[meds_cuidados_gerais].set("esp", "Cuidados Gerais")
+        meds_cuidados_gerais +=1
+
     futures = []
 
     pacientes = []
     num_pacientes = 0
-    while num_pacientes < 10:
+    while num_pacientes < 3:
         paciente = AgentePaciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
         future = paciente.start(auto_register=True)
         futures.append(future)
@@ -61,27 +67,29 @@ def main():
 
     while unidade.is_alive() and monitor.is_alive() and alerta.is_alive() and gestor_medicos.is_alive():
         try:
-            '''
             # A cada 3 segundos cria um paciente
-            for _ in range(10):
-                paciente = Paciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
-                future = paciente.start(auto_register=True)
-                future.result()
-                pacientes.append(paciente)
-                num_pacientes += 1
-            '''
-            time.sleep(1)
+            paciente = AgentePaciente(f"Paciente{num_pacientes}@{XMPP_SERVER}", PASSWORD)
+            future = paciente.start(auto_register=True)
+            future.result()
+            pacientes.append(paciente)
+            num_pacientes += 1
+
+            time.sleep(3)
 
         except KeyboardInterrupt:
             print("Encerrando agentes...")
+
             for paciente in pacientes:
                 paciente.stop()
+
             for medico in medicos:
                 medico.stop()
+
             unidade.stop()
             monitor.stop()
             alerta.stop()
             gestor_medicos.stop()
+
             break
 
 if __name__ == "__main__":

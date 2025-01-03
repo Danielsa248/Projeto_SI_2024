@@ -18,9 +18,9 @@ class AgenteUnidade(Agent):
 
     async def setup(self):
         print(f"AGENTE UNIDADE: A iniciar...")
-
+        '''
         for esp in ESPECIALIDADES:
-            self.salas[esp] = [{}, rand.randint(8,15)]
+            self.salas[esp] = [{}, rand.randint(8,15)]'''
 
         self.salas["Cuidados Gerais"] = [{}, rand.randint(20,35)]
 
@@ -28,8 +28,10 @@ class AgenteUnidade(Agent):
 
         a = self.RegistarUtenteBehav()
         b = self.UpdatePrioridadeBehav()
+        c = self.RegistarMedico()
         self.add_behaviour(a)
         self.add_behaviour(b)
+        self.add_behaviour(c)
 
 
     def utenteExists(self, jid):
@@ -56,7 +58,7 @@ class AgenteUnidade(Agent):
             if self.salas["Cuidados Gerais"][1] > 0:
                 self.salas["Cuidados Gerais"][0][id] = lowprio
                 self.salas["Cuidados Gerais"][1] -= 1
-                return True
+                return [id, "cuidados_gerais"]
 
             else:
                 # pop menor prioridade nos Cuidados Gerais
@@ -74,13 +76,13 @@ class AgenteUnidade(Agent):
                     self.salas["Cuidados Gerais"][0][id] = lowprio
 
 
-                return True
+                return [id2, "expulso"]
 
         else:
             if self.salas["Cuidados Gerais"][1] > 0:
                 self.salas["Cuidados Gerais"][0][paciente] = prioridade
                 self.salas["Cuidados Gerais"][1] -= 1
-                return True
+                return [None, "no"]
 
             else:
                 # pop menor prioridade nos Cuidados Gerais
@@ -96,10 +98,10 @@ class AgenteUnidade(Agent):
                 if lowprio2 < prioridade:
                     self.salas["Cuidados Gerais"][0].pop(id2)
                     self.salas["Cuidados Gerais"][0][paciente] = prioridade
-                    return True
+                    return [id2, "expulso"]
 
                 else:
-                    return False
+                    return None
 
 
     def getEspecialidade(self, jid):
@@ -115,7 +117,7 @@ class AgenteUnidade(Agent):
         async def run(self):
             async with self.agent.lock:
                 msg = await self.receive()
-                if msg and (msg.get_metadata("performative") == "subscribe"):
+                if msg and (msg.get_metadata("performative") == "subscribe") and (msg.get_metadata("ontology") == "registar_paciente"):
                     utente = jsonpickle.decode(msg.body)
 
                     exists = self.agent.utenteExists(utente.get_jid())
@@ -133,7 +135,7 @@ class AgenteUnidade(Agent):
                                 #mandar confirm
                                 msg_response = msg.make_reply()
                                 msg_response.set_metadata("performative", "confirm")
-                                msg_response.set_metadata("ontology", "registado")
+                                msg_response.set_metadata("ontology", "cuidados_gerais")
                                 await self.send(msg_response)
 
                             else:
@@ -165,11 +167,28 @@ class AgenteUnidade(Agent):
                                 if success:
                                     print(f"AGENTE UNIDADE: Registou {extrair_nome_agente(msg.sender)}.")
 
-                                    # mandar confirm
-                                    msg_response = msg.make_reply()
-                                    msg_response.set_metadata("performative", "confirm")
-                                    msg_response.set_metadata("ontology", "registado")
-                                    await self.send(msg_response)
+                                    if success[1] == "no":
+                                        response = msg.make_reply()
+                                        response.set_metadata("performative", "confirm")
+                                        response.set_metadata("ontology", "cuidados_gerais")
+                                        await self.send(response)
+
+                                    elif success[1] == "expulso":
+                                        msg_expulso = Message(to=success[0])
+                                        msg_expulso.set_metadata("performative", "unsubscribe")
+                                        msg_expulso.set_metadata("ontology", "transferido")
+                                        await self.send(msg_expulso)
+
+                                        response = msg.make_reply()
+                                        response.set_metadata("performative", "confirm")
+                                        response.set_metadata("ontology", "cuidados_gerais")
+                                        await self.send(response)
+
+                                    elif success[1] == "cuidados_gerais":
+                                        msg_cg = Message(to=success[0])
+                                        msg_cg.set_metadata("performative", "confirm")
+                                        msg_cg.set_metadata("ontology", "cuidados_gerais")
+                                        await self.send(msg_cg)
 
                                 else:
                                     print(f"AGENTE UNIDADE: Não conseguiu registar {extrair_nome_agente(msg.sender)} devido à falta de camas.")
@@ -184,6 +203,18 @@ class AgenteUnidade(Agent):
                         msg.body = "Este paciente já está registado!..."
                         await self.send(msg_response)
 
+
+    class RegistarMedico(CyclicBehaviour):
+        async def run(self):
+            msg = await self.receive(timeout=10)
+
+            if msg and (msg.get_metadata("performative") == "susbcribe") and (msg.get_metadata("ontology") == "registar_medico"):
+                medico = jsonpickle.decode(msg.body)
+                especialidade = medico.get_especialidade()
+
+                if especialidade != "Cuidados Gerais":
+                    if especialidade not in self.agent.salas:
+                        self.agent.salas[especialidade][1] = [{}, rand.randint(8,15)]
 
 
     class UpdatePrioridadeBehav(CyclicBehaviour):
@@ -206,4 +237,5 @@ class AgenteUnidade(Agent):
                             self.agent.salas[especialidade][1] += 1
                             responde = Message(to=utente.get_jid())
                             responde.set_metadata("performative", "unsubscribe")
+                            responde.set_metadata("ontology", "curado")
                             await self.send(responde)

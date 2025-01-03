@@ -26,18 +26,28 @@ class AgenteMedico(Agent):
         self.add_behaviour(behave2)
 
 
-    '''Comportamento onde o Médico envia mensagem ao Gestor para o registar no sistema'''
+    '''
+    Comportamento onde o Médico envia mensagem ao
+    Gestor de Médicos e Agente Unidade para o registar no sistema
+    '''
 
     class MedicoRegista(OneShotBehaviour):
         async def run(self):
             #Manda msg ao Gestor de Medicos
             dm = DadosMedicos(str(self.agent.jid), self.agent.get("esp"), self.agent.get("turno"))
-            msg = Message(to=AGENTE_GESTOR_MEDICOS)
-            msg.body = jsonpickle.encode(dm)
-            msg.set_metadata("performative", "subscribe")
 
-            await self.send(msg)
-            print(f"{extrair_nome_agente(self.agent.jid)}: Registo enviado ao Gestor")
+            msg_gestor = Message(to=AGENTE_GESTOR_MEDICOS)
+            msg_gestor.body = jsonpickle.encode(dm)
+            msg_gestor.set_metadata("performative", "subscribe")
+
+            msg_unidade = Message(to=AGENTE_UNIDADE)
+            msg_unidade.body = jsonpickle.encode(dm)
+            msg_unidade.set_metadata("performative", "subscribe")
+            msg_unidade.set_metadata("ontology", "registar_medico")
+
+            await self.send(msg_gestor)
+            await self.send(msg_unidade)
+            print(f"{extrair_nome_agente(self.agent.jid)}: Enviado o registo para os devidos agentes")
 
 
     '''Comportamento onde o Médico trata o Paciente'''
@@ -66,5 +76,5 @@ class AgenteMedico(Agent):
                     # Sinaliza o fim do tratamento ao Gestor de Medicos
                     msg = Message(to=AGENTE_GESTOR_MEDICOS)
                     msg.set_metadata("performative", "confirm")
-                    msg.body = str(self.agent.jid) + "," + self.agent.get("esp")
+                    msg.body = self.agent.get("esp")
                     await self.send(msg)

@@ -26,9 +26,11 @@ class AgenteAlerta(Agent):
         processar_alertas = self.ProcessarAlertas()
         aguardar_resposta = self.AguardarResposta()
         tratar_filas_de_espera = self.TratarFilasDeEspera(period=10)
+        atualizar_pacientes = self.AtualizarPacientes()
         self.add_behaviour(processar_alertas)
         self.add_behaviour(aguardar_resposta)
         self.add_behaviour(tratar_filas_de_espera)
+        self.add_behaviour(atualizar_pacientes)
 
 
     # Função auxiliar para construção das mensagens a enviar ao Agente Gestor de Médicos
@@ -49,7 +51,7 @@ class AgenteAlerta(Agent):
     class ProcessarAlertas(CyclicBehaviour):
         async def run(self):
             alerta = await self.receive()
-            if alerta and (alerta.get_metadata("performative") == "inform"):
+            if alerta and (alerta.get_metadata("performative") == "inform") and (alerta.get_metadata("ontology") == "alerta"):
                 dados_paciente = jp.decode(alerta.body)
                 paciente_jid = dados_paciente.get_jid()
                 print(f"AGENTE ALERTA: Recebido alerta relativo ao {extrair_nome_agente(paciente_jid)}.")
@@ -101,3 +103,21 @@ class AgenteAlerta(Agent):
                         print(f"AGENTE ALERTA: Enviada **NOVA** requisição para o tratamento do {extrair_nome_agente(paciente_jid)}.")
 
                     fila -= 1
+
+
+    class AtualizarPacientes(CyclicBehaviour):
+        async def run(self):
+            update = await self.receive(timeout=10)
+            if update and update.get_metadata("performative") == "inform" and update.get_metadata("ontology") == "update_especialidade":
+                fila = LIMITE_ALERTA
+                encontrado = False
+                async with self.agent.lock:
+                    while fila <= GRAU_MAX and not encontrado:
+                        for dados_paciente in self.agent.filas_de_espera[fila]:
+                            paciente_jid = dados_paciente.get_jid()
+                            if paciente_jid == update.sender:
+                                dados_paciente.set_especialidade(update.body)
+                                print(f"AGENTE ALERTA: O {extrair_nome_agente(paciente_jid)} trocou de especialidade.")
+                                encontrado = True
+                                break
+                        fila += 1
